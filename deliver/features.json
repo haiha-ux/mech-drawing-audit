@@ -1,59 +1,56 @@
 {
  "overall": {
-  "L": 60.0,
+  "L": 65.0,
   "W": 50.0,
   "H": 10.0
  },
- "step": {
-  "x": 42.0,
-  "h": 6.0
- },
  "chamfer": 1.0,
  "pilot": {
-  "x": 21.0,
+  "x": 22.0,
   "y": 25.0,
-  "d": 22.5
+  "d": 22.0,
+  "fit": "H8"
  },
  "m3": [
   {
-   "x": 5.5,
+   "x": 6.5,
    "y": 9.5,
    "hole": 3.4,
    "cbore": 6.5,
-   "depth": 3.4
+   "depth": 4.0
   },
   {
-   "x": 5.5,
+   "x": 6.5,
    "y": 40.5,
    "hole": 3.4,
    "cbore": 6.5,
-   "depth": 3.4
+   "depth": 4.0
   },
   {
-   "x": 36.5,
+   "x": 37.5,
    "y": 9.5,
    "hole": 3.4,
    "cbore": 6.5,
-   "depth": 3.4
+   "depth": 4.0
   },
   {
-   "x": 36.5,
+   "x": 37.5,
    "y": 40.5,
    "hole": 3.4,
    "cbore": 6.5,
-   "depth": 3.4
+   "depth": 4.0
   }
  ],
  "m5": [
   {
-   "x": 51.0,
+   "x": 55.0,
    "y": 15.0,
    "hole": 5.5,
    "cbore": 10.0,
    "depth": 5.4
   },
   {
-   "x": 51.0,
+   "x": 55.0,
    "y": 35.0,
    "hole": 5.5,
    "cbore": 10.0,
@@ -80,25 +77,46 @@
    "pitch": 0.7
   }
  ],
- "pocket": {
-  "cx": 51.0,
-  "cy": 25.0,
-  "lx": 12.0,
-  "ly": 8.0,
-  "depth": 2.0,
-  "r": 2.0
+ "motor": {
+  "x": 22.0,
+  "y": 25.0,
+  "body": 42.3,
+  "boss_d": 22.0,
+  "boss_h": 2.0,
+  "thread_depth": 4.5
+ },
+ "extrusion": {
+  "x": 55.0,
+  "size": 20.0
+ },
+ "screws": {
+  "M3": {
+   "d": 3.0,
+   "dk": 5.5,
+   "k": 3.0,
+   "length": 10.0,
+   "tighten_nm": 1.0
+  },
+  "M5": {
+   "d": 5.0,
+   "dk": 8.5,
+   "k": 5.0,
+   "length": 10.0,
+   "tighten_nm": 4.0
+  }
  },
  "datums": {
   "A": "z = 0 underside",
   "B": "y = 50 back face",
   "C": "x = 0 left face",
-  "D": "axis of M5 hole at (51, 15)"
+  "D": "axis of the M5 hole at (55, 15)"
  },
  "material": "Al 6061-T6",
  "sources": {
-  "ISO 4762": "M3 dk max 5.5, k max 3.0; M5 dk max 8.5, k max 5.0 (counterbore = dk + 1, depth = k + 0.4)",
-  "ISO 273": "clearance holes, medium series: M3 3.4, M5 5.5",
+  "ISO 4762": "M3 dk 5.5, k 3.0; M5 dk 8.5, k 5.0 (max)",
+  "DIN 974-1": "counterbore diameters for ISO 4762: M3 6.5, M5 10",
+  "ISO 273": "clearance holes, medium series, H13: M3 3.4, M5 5.5",
   "ISO 2306 / ISO 965": "M4x0.7-6H tap drill 3.3",
-  "NEMA ICS 16": "NEMA 17 frame: 31 mm hole spacing, 22 mm pilot"
+  "NEMA ICS 16 / Novanta 17-frame": "31 mm hole spacing, boss 22 0/-0.052 x 2, body 42.3, M3 thread depth 4.5 min"
  }
 }

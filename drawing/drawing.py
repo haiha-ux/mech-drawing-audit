@@ -9,6 +9,7 @@ import math
 from pathlib import Path
 
 import ezdxf
+from ezdxf.tools import text_size
 import numpy as np
 from build123d import Box, Pos, Align, import_step
 
@@ -17,6 +18,13 @@ OUT = ROOT / "out"
 F = json.loads((OUT / "features.json").read_text())
 S = 2.0                      # drawing scale 2:1
 SHEET = (420.0, 297.0)
+SECTION_X = 55.0             # section A-A through the M5 holes
+# sheet positions of callouts, frames and notes (tuned so that no text touches a line: verify checks it)
+PILOT_LOC, PILOT_FRAME = (56.0, 202.0), (21.0, 194.5)
+M3_LOC, M4_LOC, M5_LOC = (92.0, 32.0), (150.0, 278.0), (234.0, 80.0)
+COAX_FRAME = (288.0, 195.0)
+NOTES_AT = (232.0, 231.0)
+LABEL_DY = {"TOP": 13, "FRONT": 4, "SECTION A-A": 4}
 
 # view definitions: camera direction (from part towards camera), up, right; sheet origin of the model origin
 VIEWS = {
@@ -24,7 +32,7 @@ VIEWS = {
     "TOP": dict(projection="top", cam=(0, 0, 1), up=(0, 1, 0), right=(1, 0, 0), origin=(60.0, 76.0)),
     "LEFT": dict(projection="left", cam=(-1, 0, 0), up=(0, 0, 1), right=(0, -1, 0), origin=(345.0, 236.0)),
     "SECTION A-A": dict(projection="section", cam=(1, 0, 0), up=(0, 0, 1), right=(0, 1, 0), origin=(245.0, 168.0),
-                        plane={"point": [51.0, 0.0, 0.0], "normal": [1.0, 0.0, 0.0]}),
+                        plane={"point": [55.0, 0.0, 0.0], "normal": [1.0, 0.0, 0.0]}),
     "ISO": dict(projection="iso", cam=(1, -1, 1), up=(0, 0, 1), right=None, origin=None, scale=1.0),
 }
 
@@ -52,9 +60,9 @@ def project(view, p):
 
 def setup(doc):
     doc.units = ezdxf.units.MM
-    for n, col, lt, lw in (("VISIBLE", 7, "CONTINUOUS", 50), ("HIDDEN", 8, "HIDDEN", 25), ("CENTER", 3, "CENTER", 18),
-                           ("THREAD", 7, "CONTINUOUS", 18), ("DIM", 1, "CONTINUOUS", 18), ("GDT", 1, "CONTINUOUS", 18),
-                           ("GDT_PDF", 1, "CONTINUOUS", 18), ("DATUM", 1, "CONTINUOUS", 18), ("HATCH", 8, "CONTINUOUS", 13),
+    for n, col, lt, lw in (("VISIBLE", 7, "CONTINUOUS", 50), ("HIDDEN", 8, "HIDDEN", 25), ("CENTER", 3, "CENTER", 25),
+                           ("THREAD", 7, "CONTINUOUS", 25), ("DIM", 1, "CONTINUOUS", 25), ("GDT", 1, "CONTINUOUS", 25),
+                           ("GDT_PDF", 1, "CONTINUOUS", 25), ("DATUM", 1, "CONTINUOUS", 25), ("HATCH", 8, "CONTINUOUS", 25),
                            ("TEXT", 7, "CONTINUOUS", 25), ("FRAME", 7, "CONTINUOUS", 50), ("CUTPLANE", 3, "CENTER", 35)):
         if lt not in doc.linetypes:
             doc.linetypes.add(lt, pattern={"HIDDEN": [4.5, 3, -1.5], "CENTER": [12, 8, -2, 0, -2]}.get(lt, [0.0]))
@@ -118,11 +126,11 @@ class Sheet:
         self.dims.append(rec)
         return did
 
-    def lin(self, view, p1, p2, base, value, feature, tol="ISO2768-m", angle=0, ted=False, text="<>"):
+    def lin(self, view, p1, p2, base, value, feature, tol="ISO2768-m", angle=0, ted=False, text="<>", loc=None):
         """Linear dimension between two model points (projected); base is a sheet point for the dimension line."""
         a, b = project(view, p1), project(view, p2)
         d = self.msp.add_linear_dim(base=base, p1=a, p2=b, angle=angle, dimstyle="TED" if ted else "ISO25",
-                                    text=text, dxfattribs={"layer": "DIM"})
+                                    text=text, location=loc, dxfattribs={"layer": "DIM"})
         return self._record(d, "linear", value, "basic" if ted else tol, feature, view, text, {"p1": p1, "p2": p2})
 
     def dia(self, view, centre, r_model, ang_deg, value, feature, text, tol="ISO2768-m", axis=(0, 0, 1), loc=None):
@@ -163,11 +171,35 @@ class Sheet:
             self.msp.add_text(cval, height=3.0, dxfattribs={"layer": "GDT_PDF", "style": "SYM"}).set_placement(
                 (x + w / 2, at[1]), align=ezdxf.enums.TextEntityAlignment.MIDDLE_CENTER)
             x += w
-        if attached_to is None:
-            self.msp.add_line((at[0], at[1]), tuple(feature_pt), dxfattribs={"layer": "GDT"})     # leader to the feature
+        if attached_to is None:                                                # leader with an arrowhead on the feature
+            start = (x, at[1]) if feature_pt[0] > x else (at[0], at[1])
+            self.msp.add_line(start, tuple(feature_pt), dxfattribs={"layer": "GDT"})
+            self.arrow(feature_pt, start, "GDT")
         self.gdts.append({"insert": list(at), "content": content, "feature_pt": list(feature_pt), "note": note,
                           "handle": tol_ent.dxf.handle, "attached_to": attached_to,
                           "bbox": [at[0], at[1] - h / 2, x, at[1] + h / 2]})
+
+    def arrow(self, tip, frm, layer):
+        d = np.subtract(tip, frm)
+        d = d / np.linalg.norm(d)
+        n = np.array([-d[1], d[0]])
+        b = np.asarray(tip) - 3.0 * d
+        h = self.msp.add_hatch(color=1, dxfattribs={"layer": layer})
+        h.paths.add_polyline_path([tuple(tip), tuple(b + 0.5 * n), tuple(b - 0.5 * n)], is_closed=True)
+        h.set_solid_fill()
+
+    def roughness(self, surface_pt, value):
+        """ISO 21920-1 graphical symbol, material removal required, on a leader from the surface (below it)."""
+        sx_, sy_ = surface_pt
+        vx, vy = sx_ + 8, sy_ - 22                       # symbol vertex on the leader shoulder
+        self.msp.add_line((sx_, sy_), (vx - 6, vy), dxfattribs={"layer": "DIM"})
+        self.arrow((sx_, sy_), (vx - 6, vy), "DIM")
+        self.msp.add_line((vx - 6, vy), (vx + 3, vy), dxfattribs={"layer": "DIM"})
+        h1, h2 = 5.0, 10.5
+        t = math.tan(math.radians(60))
+        self.msp.add_lwpolyline([(vx - h1 / t, vy + h1), (vx, vy), (vx + h2 / t, vy + h2), (vx + h2 / t + 16, vy + h2)], dxfattribs={"layer": "DIM"})
+        self.msp.add_line((vx - h1 / t, vy + h1), (vx + h1 / t, vy + h1), dxfattribs={"layer": "DIM"})   # bar: material removal
+        self.text(value, (vx + h2 / t + 1, vy + h2 - 4.2), 3.0, style="ISO")
 
     def datum(self, letter, foot, direction):
         """ISO 5459 datum feature symbol: filled triangle on the feature, square frame with the letter."""
@@ -203,12 +235,12 @@ def main():
         views_json.append({"name": v, "projection": VIEWS[v]["projection"], "system": "first", "scale": S,
                            "origin": list(VIEWS[v]["origin"]), "bbox": [*allp.min(0).round(3), *allp.max(0).round(3)],
                            "view_dir": list(-unit(VIEWS[v]["cam"])), "up": list(frame(v)[1]), "right": list(frame(v)[2])})
-    # section A-A: keep x <= 51, look from +x
-    keep = part & (Pos(-10, -10, -10) * Box(61, 70, 30, align=(Align.MIN, Align.MIN, Align.MIN)))
+    # section A-A: keep x <= SECTION_X, look from +x
+    keep = part & (Pos(-10, -10, -10) * Box(10 + SECTION_X, 70, 30, align=(Align.MIN, Align.MIN, Align.MIN)))
     vl, hl = hlr(keep, "SECTION A-A")
     for a in vl:
         sh.poly(a, "VISIBLE")
-    cutf = [f for f in keep.faces() if abs(f.center().X - 51.0) < 1e-6 and f.geom_type.name == "PLANE"]
+    cutf = [f for f in keep.faces() if abs(f.center().X - SECTION_X) < 1e-6 and f.geom_type.name == "PLANE"]
     for f in cutf:
         h = msp.add_hatch(color=8, dxfattribs={"layer": "HATCH"})
         h.set_pattern_fill("ANSI31", scale=0.6)
@@ -237,22 +269,22 @@ def main():
         vj["up"] = [float(x) for x in vj["up"]]
         vj["right"] = [float(x) for x in vj["right"]]
         lab = vj["name"] + ("" if vj["name"] != "ISO" else " (1:1)")
-        sh.text(lab, (vj["bbox"][0], vj["bbox"][3] + 4), 3.5, style="ISO")
+        sh.text(lab, (vj["bbox"][2], vj["bbox"][3] + LABEL_DY.get(vj["name"], 4)), 3.5, style="ISO",
+                align=ezdxf.enums.TextEntityAlignment.BOTTOM_RIGHT)
 
-    O, P5, M3, M5, M4, PK = F["overall"], F["pilot"], F["m3"], F["m5"], F["m4"], F["pocket"]
+    O, P5, M3, M5, M4 = F["overall"], F["pilot"], F["m3"], F["m5"], F["m4"]
     L, W, H = O["L"], O["W"], O["H"]
-    sx, hs = F["step"]["x"], F["step"]["h"]
+    XS = SECTION_X
     # ---------------- centre lines and thread conventions
     for hole, r in [(P5, P5["d"] / 2)] + [(m, m["hole"] / 2) for m in M3] + [(m, m["hole"] / 2) for m in M5]:
         sh.cross("TOP", (hole["x"], hole["y"], H), max(r, hole.get("cbore", 0) / 2))
-    sh.cross("TOP", (PK["cx"], PK["cy"], hs), min(PK["lx"], PK["ly"]) / 2)
-    for hole, zt in [(P5, H)] + [(m, H) for m in M3] + [(m, hs) for m in M5]:     # axes in front and left views
-        a, b = project("FRONT", (hole["x"], 0, -1)), project("FRONT", (hole["x"], 0, zt + 1))
+    for hole in [P5] + M3 + M5:                                   # axes in front and left views
+        a, b = project("FRONT", (hole["x"], 0, -1)), project("FRONT", (hole["x"], 0, H + 1))
         sh.line(a, b, "CENTER")
-        a, b = project("LEFT", (0, hole["y"], -1)), project("LEFT", (0, hole["y"], zt + 1))
+        a, b = project("LEFT", (0, hole["y"], -1)), project("LEFT", (0, hole["y"], H + 1))
         sh.line(a, b, "CENTER")
     for m in M5:
-        a, b = project("SECTION A-A", (51, m["y"], -1)), project("SECTION A-A", (51, m["y"], hs + 1))
+        a, b = project("SECTION A-A", (XS, m["y"], -1)), project("SECTION A-A", (XS, m["y"], H + 1))
         sh.line(a, b, "CENTER")
     for m in M4:
         sh.cross("FRONT", (m["x"], 0, m["z"]), m["major"] / 2)
@@ -269,7 +301,7 @@ def main():
             a = project("LEFT", (0, 0, m["z"] + sgn * m["major"] / 2)); b = project("LEFT", (0, m["thread_depth"], m["z"] + sgn * m["major"] / 2))
             msp.add_line(a, b, dxfattribs={"layer": "THREAD", "linetype": "HIDDEN"})
     # cutting plane A-A in the top view (arrows show the viewing direction, -x)
-    a, b = project("TOP", (51, -6, H)), project("TOP", (51, W + 6, H))
+    a, b = project("TOP", (XS, -6, H)), project("TOP", (XS, W + 6, H))
     sh.line(a, b, "CUTPLANE")
     for p in (a, b):
         msp.add_line(p, (p[0] - 8, p[1]), dxfattribs={"layer": "CUTPLANE", "linetype": "CONTINUOUS"})
@@ -280,78 +312,69 @@ def main():
 
     # ---------------- dimensions (TOP view: bottom = -y side, right = +x side)
     T = "TOP"
-    t00, tLW, t0W, tL0 = project(T, (0, 0, H)), project(T, (L, W, H)), project(T, (0, W, H)), project(T, (L, 0, H))
-    sh.lin(T, (0, 1.5, H), (L, 1.5, hs), (0, t00[1] - 34), L, "overall length X")
-    sh.lin(T, (1.5, 0, H), (1.5, W, H), (t00[0] - 22, 0), W, "overall width Y", angle=90)
-    sh.lin(T, (0, W - 1.5, H), (sx, W, H), (0, t0W[1] + 18), sx, "step edge X from datum C")
+    t00, tLW, t0W = project(T, (0, 0, H)), project(T, (L, W, H)), project(T, (0, W, H))
+    sh.lin(T, (0, 1.5, H), (L, 1.5, H), (0, t00[1] - 34), L, "overall length X")
+    sh.lin(T, (1.5, 0, H), (1.5, W, H), (t00[0] - 30, 0), W, "overall width Y", angle=90)
     sh.lin(T, (0, W - 1.5, H), (P5["x"], P5["y"], H), (0, t0W[1] + 10), P5["x"], "bore pos X from datum C", ted=True)
-    sh.lin(T, (L - 1.5, W, hs), (P5["x"], P5["y"], H), (tLW[0] + 10, 0), W - P5["y"], "bore pos Y from datum B", angle=90, ted=True)
-    sh.dia(T, (P5["x"], P5["y"], H), P5["d"] / 2, 135, P5["d"], "bore (NEMA pilot) dia", "<> +0.1/0", tol="+0.1/0",
-           loc=(t0W[0] - 4, t0W[1] + 26))
-    m3a, m3b, m3c = M3[1], M3[3], M3[0]          # (5.5, 40.5), (36.5, 40.5), (5.5, 9.5)
+    sh.lin(T, (L - 1.5, W, H), (P5["x"], P5["y"], H), (tLW[0] + 10, 0), W - P5["y"], "bore pos Y from datum B", angle=90, ted=True)
+    sh.dia(T, (P5["x"], P5["y"], H), P5["d"] / 2, 135, P5["d"], "bore (NEMA pilot) dia", "<> " + P5["fit"], tol=P5["fit"],
+           loc=PILOT_LOC)
+    m3a, m3c = M3[1], M3[0]                      # (6.5, 40.5), (6.5, 9.5)
     sh.lin(T, (0, 1.5, H), (m3c["x"], m3c["y"], H), (0, t00[1] - 10), m3c["x"], "M3 holes pos X from datum C", ted=True)
     sh.lin(T, (m3c["x"], m3c["y"], H), (M3[2]["x"], M3[2]["y"], H), (0, t00[1] - 10), M3[2]["x"] - m3c["x"], "M3 pattern spacing X", ted=True)
-    sh.lin(T, (L - 1.5, W, hs), (m3a["x"], m3a["y"], H), (tLW[0] + 18, 0), W - m3a["y"], "M3 holes pos Y from datum B", angle=90, ted=True)
-    sh.lin(T, (0, 0, H), (m3c["x"], m3c["y"], H), (t00[0] - 12, 0), m3c["y"], "", angle=90, ted=True) if False else None
+    sh.lin(T, (L - 1.5, W, H), (m3a["x"], m3a["y"], H), (tLW[0] + 18, 0), W - m3a["y"], "M3 holes pos Y from datum B", angle=90, ted=True,
+           loc=(tLW[0] + 18 - 2.6, (tLW[1] + project(T, (0, m3a["y"], H))[1]) / 2))
     sh.lin(T, (m3a["x"], m3a["y"], H), (m3c["x"], m3c["y"], H), (t00[0] - 10, 0), m3a["y"] - m3c["y"], "M3 pattern spacing Y", angle=90, ted=True)
-    sh.dia(T, (m3c["x"], m3c["y"], H), m3c["hole"] / 2, 225, m3c["hole"], "M3 holes dia (4x), counterbore 6.5 x 3.4",
-           "4× <> THRU\\P⌴ Ø6.5 ↧ 3.4", loc=(92.0, 32.0))
-    m5a, m5b = M5[1], M5[0]                      # (51, 35), (51, 15)
-    sh.lin(T, (0, 1.5, H), (m5b["x"], m5b["y"], hs), (0, t00[1] - 22), m5b["x"], "M5 holes pos X from datum C", ted=True)
-    sh.lin(T, (L - 1.5, W, hs), (m5a["x"], m5a["y"], hs), (tLW[0] + 26, 0), W - m5a["y"], "M5 holes pos Y from datum B", angle=90, ted=True)
-    sh.lin(T, (m5a["x"], m5a["y"], hs), (m5b["x"], m5b["y"], hs), (tLW[0] + 34, 0), m5a["y"] - m5b["y"], "M5 holes spacing Y", angle=90, ted=True)
-    sh.dia(T, (m5b["x"], m5b["y"], hs), m5b["hole"] / 2, 315, m5b["hole"], "M5 holes dia (2x), counterbore 10 x 5.4",
-           "2× <> THRU\\P⌴ Ø10 ↧ 5.4", loc=(234.0, 80.0))
-    px0, px1 = PK["cx"] - PK["lx"] / 2, PK["cx"] + PK["lx"] / 2
-    py0, py1 = PK["cy"] - PK["ly"] / 2, PK["cy"] + PK["ly"] / 2
-    sh.lin(T, (px0, py1, hs), (px1, py1, hs), (0, project(T, (0, py1, hs))[1] + 5), PK["lx"], "pocket length X")
-    sh.lin(T, (px0, py0, hs), (px0, py1, hs), (project(T, (px0, 0, hs))[0] - 9, 0), PK["ly"], "pocket width Y", angle=90)
-    rc = (px1 - PK["r"], py1 - PK["r"], hs)
-    sh.rad(T, rc, PK["r"], 45, PK["r"], "pocket corner radius (4x, cutter R2)", text="4× <>", loc=(project(T, (px1, 0, 0))[0] + 3, project(T, (0, py1, hs))[1] + 5))
+    sh.dia(T, (m3c["x"], m3c["y"], H), m3c["hole"] / 2, 225, m3c["hole"], f"M3 holes dia (4x), counterbore {m3c['cbore']:g} x {m3c['depth']:g}",
+           f"4× <> THRU\\P⌴ Ø{m3c['cbore']:g} ↧ {m3c['depth']:g}", loc=M3_LOC)
+    m5a, m5b = M5[1], M5[0]                      # (55, 35), (55, 15)
+    sh.lin(T, (0, 1.5, H), (m5b["x"], m5b["y"], H), (0, t00[1] - 22), m5b["x"], "M5 holes pos X from datum C", ted=True)
+    sh.lin(T, (L - 1.5, W, H), (m5a["x"], m5a["y"], H), (tLW[0] + 26, 0), W - m5a["y"], "M5 holes pos Y from datum B", angle=90, ted=True)
+    sh.lin(T, (m5a["x"], m5a["y"], H), (m5b["x"], m5b["y"], H), (tLW[0] + 34, 0), m5a["y"] - m5b["y"], "M5 holes spacing Y", angle=90, ted=True)
+    sh.dia(T, (m5b["x"], m5b["y"], H), m5b["hole"] / 2, 315, m5b["hole"], f"M5 holes dia (2x), counterbore {m5b['cbore']:g} x {m5b['depth']:g}",
+           f"2× <> THRU\\P⌴ Ø{m5b['cbore']:g} ↧ {m5b['depth']:g}", loc=M5_LOC)
     ch = F["chamfer"]
-    sh.lin(T, (L - ch, W, hs), (L, W - ch, hs), (0, tLW[1] + 6), ch, "corner chamfer leg (4x, 45 deg)", text="4× <>×45°")
+    sh.lin(T, (L - ch, W, H), (L, W - ch, H), (0, tLW[1] + 6), ch, "corner chamfer leg (4x, 45 deg)", text="4× <>×45°")
     # FRONT view
     Fv = "FRONT"
     f00, fL0 = project(Fv, (0, 0, 0)), project(Fv, (L, 0, 0))
-    sh.lin(Fv, (0, 1.5, 0), (0, 1.5, H), (f00[0] - 10, 0), H, "overall height Z", angle=90)
-    sh.lin(Fv, (L, 1.5, 0), (L, 1.5, hs), (fL0[0] + 8, 0), hs, "step thickness Z", angle=90)
+    sh.lin(Fv, (L, 1.5, 0), (L, 1.5, H), (fL0[0] + 10, 0), H, "overall height Z", angle=90)
     m4a, m4b = M4
     sh.lin(Fv, (0, 1.5, H), (m4a["x"], 0, m4a["z"]), (0, project(Fv, (0, 0, H))[1] + 8), m4a["x"], "M4 holes pos X from datum C", ted=True)
     sh.lin(Fv, (m4a["x"], 0, m4a["z"]), (m4b["x"], 0, m4b["z"]), (0, project(Fv, (0, 0, H))[1] + 8), m4b["x"] - m4a["x"], "M4 holes spacing X", ted=True)
-    sh.lin(Fv, (0, 1.5, 0), (m4a["x"], 0, m4a["z"]), (f00[0] - 20, 0), m4a["z"], "M4 holes pos Z from datum A", angle=90, ted=True)
+    sh.lin(Fv, (0, 1.5, 0), (m4a["x"], 0, m4a["z"]), (f00[0] - 10, 0), m4a["z"], "M4 holes pos Z from datum A", angle=90, ted=True)
     sh.dia(Fv, (m4b["x"], 0, m4b["z"]), m4b["major"] / 2, 45, m4b["major"], "M4 thread major dia (2x); tap drill 3.3 x 10 in the STEP",
-           "2× M4×0.7-6H ↧ 8\\Ptap drill Ø3.3 ↧ 10", tol="6H", axis=(0, 1, 0), loc=(150.0, 278.0))
-    # SECTION A-A: pocket depth
+           "2× M4×0.7-6H ↧ 8\\Ptap drill Ø3.3 ↧ 10", tol="6H", axis=(0, 1, 0), loc=M4_LOC)
+    # SECTION A-A: the M5 hole that is datum D, as an auxiliary dimension carrying the datum triangle (ISO 5459)
     Sv = "SECTION A-A"
-    sh.lin(Sv, (51, py0, hs), (51, py0, hs - PK["depth"]), (project(Sv, (51, 0, 0))[0] - 8, 0), PK["depth"], "pocket depth Z", angle=90)
+    zd = 2.0
+    dD = (project(Sv, (XS, 0, 0))[1] - 9)
+    sh.lin(Sv, (XS, m5b["y"] - m5b["hole"] / 2, zd), (XS, m5b["y"] + m5b["hole"] / 2, zd), (0, dD), m5b["hole"],
+           "M5 hole D dia (auxiliary, carries datum D)", text="(Ø<>)", tol="aux",
+           loc=(project(Sv, (XS, m5b["y"] - m5b["hole"] / 2, 0))[0] - 8.0, dD + 2.4))     # text outside, left
+    xl = project(Sv, (XS, m5b["y"] - m5b["hole"] / 2, 0))[0]
+    sh.line((xl, dD), (xl - 14.0, dD), "DIM")                     # dimension line carried out under its text
 
-    # ---------------- datums, GD&T, roughness (frames sit outside the views, leader to the feature)
-    fa = project(Fv, (6, 0, 0))
-    sh.datum("A", fa, (0, -1))
-    fb = project(T, (8, W, H))
-    sh.datum("B", (project(T, (30, W, H))[0], fb[1]), (0, 1))
-    fc = project(T, (0, 22, H))
-    sh.datum("C", fc, (-1, 0))
-    fd = project(Sv, (51, m5b["y"] - m5b["hole"] / 2, 1.5))
-    sh.datum("D", fd, (0, -1)) if False else sh.datum("D", (fd[0], project(Sv, (51, 0, 0))[1]), (0, -1))
-    fl = project(Fv, (30, 0, 0))
-    sh.gdt((fl[0] - 6, fl[1] - 12), "c", "0.02", [], fl, "flatness of A")
-    bpt = project(T, (52, W, H))
+    # ---------------- datums, GD&T, roughness
+    sh.datum("A", project(Fv, (6, 0, 0)), (0, -1))
+    sh.datum("B", project(T, (30, W, H)), (0, 1))
+    sh.datum("C", project(T, (0, 45, H)), (-1, 0))
+    sh.datum("D", (project(Sv, (XS, m5b["y"] + m5b["hole"] / 2, 0))[0], dD), (1, 0))
+    fl = project(Fv, (32, 0, 0))
+    sh.gdt((fl[0] + 6, fl[1] - 14), "c", "0.05", [], fl, "flatness of A")
+    bpt = project(T, (44, W, H))
     sh.gdt((bpt[0] + 6, bpt[1] + 22), "b", "0.05", ["A"], bpt, "perpendicularity of B to A")
-    m3pt = project(T, (m3a["x"] + m3a["cbore"] / 2 * 0.7071, m3a["y"] + m3a["cbore"] / 2 * 0.7071, H))
-    sh.gdt((92.0, 22.5), "j", "Ø0.1", ["A", "B", "C"], m3pt, "position of 4x M3 holes", attached_to="M3 holes dia")
+    m3pt = project(T, (m3a["x"], m3a["y"], H))
+    sh.gdt((M3_LOC[0], M3_LOC[1] - 9.5), "j", "Ø0.1", ["A", "B", "C"], m3pt, "position of 4x M3 holes", attached_to="M3 holes dia")
     p5pt = project(T, (P5["x"], P5["y"] + P5["d"] / 2, H))
-    sh.gdt((21.0, t0W[1] + 18.5), "j", "Ø0.05", ["A", "B", "C"], p5pt, "position of the pilot bore", attached_to="bore (NEMA pilot) dia")
-    m5pt = project(T, (m5b["x"] + m5b["cbore"] / 2, m5b["y"], hs))
-    sh.gdt((234.0, 70.5), "j", "Ø0.2", ["A", "B", "C"], m5pt, "position of 2x M5 holes", attached_to="M5 holes dia")
-    m4pt = project(Fv, (m4a["x"], 0, m4a["z"] + m4a["major"] / 2))
-    sh.gdt((150.0, 268.5), "j", "Ø0.2", ["A", "C", "B"], m4pt, "position of 2x M4 threads", attached_to="M4 thread major dia")
-    cbp = project(Sv, (51, m5b["y"] + m5b["cbore"] / 2, hs - 2.7))
-    sh.gdt((cbp[0] + 14, cbp[1] - 14), "r", "Ø0.1", ["D"], cbp, "coaxiality of M5 counterbore to hole D")
-    rx, ry = project(Fv, (48, 0, 0))
-    msp.add_lwpolyline([(rx - 3, ry - 6), (rx, ry), (rx + 9, ry - 16)], dxfattribs={"layer": "DIM"})
-    msp.add_line((rx - 3, ry - 6), (rx + 3, ry - 6), dxfattribs={"layer": "DIM"})
-    sh.text("Ra 1.6", (rx + 6, ry - 10), 3.0, style="ISO")
+    sh.gdt(PILOT_FRAME, "j", "Ø0.05", ["A", "B", "C"], p5pt, "position of the pilot bore", attached_to="bore (NEMA pilot) dia")
+    m5pt = project(T, (m5b["x"], m5b["y"], H))
+    sh.gdt((M5_LOC[0], M5_LOC[1] - 9.5), "j", "Ø0.2", ["A", "B", "C"], m5pt, "position of 2x M5 holes", attached_to="M5 holes dia")
+    m4pt = project(Fv, (m4a["x"], 0, m4a["z"]))
+    sh.gdt((M4_LOC[0], M4_LOC[1] - 9.5), "j", "Ø0.2", ["A", "C"], m4pt, "position of 2x M4 threads", attached_to="M4 thread major dia")
+    cbp = project(Sv, (XS, m5b["y"] + m5b["cbore"] / 2, H - 0.5))
+    sh.gdt(COAX_FRAME, "r", "Ø0.1", ["D"], cbp, "coaxiality of M5 counterbore to hole D")
+    sh.roughness(project(Fv, (50, 0, 0)), "Ra 1.6")
 
     # ---------------- frame, title block, notes
     Wd, Hd = SHEET
@@ -359,28 +382,32 @@ def main():
     msp.add_lwpolyline([(20, 10), (Wd - 10, 10), (Wd - 10, Hd - 10), (20, Hd - 10)], close=True, dxfattribs={"layer": "FRAME"})
     x0 = Wd - 190
     msp.add_lwpolyline([(x0, 10), (Wd - 10, 10), (Wd - 10, 52), (x0, 52)], close=True, dxfattribs={"layer": "FRAME"})
-    for yy in (24, 38):
+    for yy in (22, 39):
         sh.line((x0, yy), (Wd - 10, yy), "FRAME")
+    mass = part.volume * 2.7e-3
     rows = [("NEMA 17 MOTOR PLATE FOR 2020 EXTRUSION", 44, 4.0),
-            (f"Material: {F['material']}   Finish: clear anodise   Mass ≈ {20484 * 2.7e-3:.0f} g", 30.5, 2.6),
-            ("General tol. ISO 2768-mK   Edges break 0.2 max   Ra 3.2 unless stated", 26.5, 2.6),
-            (f"Drawn: Ha Phan Thanh Hai   {datetime.date.today().isoformat()}   SCALE 2:1   A3   DWG MDA-001 rev A", 15.5, 2.6)]
+            (f"Material: {F['material']}   Mass ≈ {mass:.0f} g   Dimensions in mm", 34.5, 2.4),
+            ("Finish: clear anodise MIL-A-8625 Type II Cl 1, 10-15 µm; mask Ø22 bore, M4 threads", 30.0, 2.4),
+            ("General tol. ISO 2768-mK   Ra 3.2 unless stated (ISO 21920-1)   Edges 0.2 max", 25.5, 2.4),
+            (f"Drawn: Ha Phan Thanh Hai   {datetime.date.today().isoformat()}   SCALE 2:1   A3   Sheet 1/1   DWG MDA-001 rev B", 14.5, 2.4)]
     for s, y, hgt in rows:
         sh.text(s, (x0 + 3, y), hgt, style="ISO")
     # first angle symbol (ISO 5456-2): cone front view, then the view from its left placed on the right
-    sx0, sy0 = Wd - 36, 31.0
-    msp.add_lwpolyline([(sx0, sy0 - 4), (sx0 + 10, sy0 - 2), (sx0 + 10, sy0 + 2), (sx0, sy0 + 4)], close=True, dxfattribs={"layer": "FRAME"})
-    msp.add_circle((sx0 + 20, sy0), 4, dxfattribs={"layer": "FRAME"})
-    msp.add_circle((sx0 + 20, sy0), 2, dxfattribs={"layer": "FRAME"})
-    sh.text("FIRST ANGLE", (sx0 - 6, sy0 - 9.5), 2.4, style="ISO")
+    sx0, sy0 = Wd - 34, 46.0
+    msp.add_lwpolyline([(sx0, sy0 - 3), (sx0 + 8, sy0 - 1.5), (sx0 + 8, sy0 + 1.5), (sx0, sy0 + 3)], close=True, dxfattribs={"layer": "FRAME"})
+    msp.add_circle((sx0 + 16, sy0), 3, dxfattribs={"layer": "FRAME"})
+    msp.add_circle((sx0 + 16, sy0), 1.5, dxfattribs={"layer": "FRAME"})
+    sh.text("FIRST ANGLE", (sx0 - 22, sy0 - 1), 2.2, style="ISO")
     notes = ["NOTES",
              "1. Datums: A underside, B back face, C left face, D axis of the M5 hole at Y15.",
              "2. Boxed dimensions are theoretically exact (ISO 5458); tolerance in the frames.",
-             "3. Counterbores for ISO 4762 heads: M3 Ø6.5 ↧3.4, M5 Ø10 ↧5.4 (ISO 273 medium holes).",
-             "4. M4×0.7-6H thread depth 8, tap drill Ø3.3 depth 10 (ISO 2306).",
-             "5. Pocket corners R2 from a Ø4 end mill. Remove all burrs."]
+             "3. Counterbore diameters to DIN 974-1 for ISO 4762 screws M3×10 and M5×10.",
+             "4. Ø3.4 and Ø5.5 clearance holes H13 (ISO 273 medium), not general tolerance.",
+             "5. M4×0.7-6H ↧8, tap drill Ø3.3 ↧10 (ISO 2306): accessory mounting.",
+             "6. Ø22 H8 bore locates the NEMA 17 boss (Ø22 0/-0.052 × 2); bore is through.",
+             "7. Datum A finish milled for flatness 0.05. Remove all burrs."]
     for k, s in enumerate(notes):
-        sh.text(s, (232, 229 - 5 * k), 2.4 if k else 2.8)
+        sh.text(s, NOTES_AT[0:1] + (NOTES_AT[1] - 4.2 * k,), 2.4 if k else 2.8)
     doc = sh.doc
     for rec in sh.dims:
         if rec["tol"] != "basic":
@@ -390,15 +417,15 @@ def main():
         for e in blk:
             if e.dxftype() != "MTEXT":
                 continue
-            h = e.dxf.char_height
-            txt = e.plain_text()
-            w = 0.62 * h * len(txt) + 1.6
-            cx, cy = e.dxf.insert.x, e.dxf.insert.y
-            ap = e.dxf.attachment_point                       # 1..9: TL TC TR ML MC MR BL BC BR
-            cy += {1: -h / 2, 2: -h / 2, 3: -h / 2, 7: h / 2, 8: h / 2, 9: h / 2}.get(ap, 0)
-            cx += {1: w / 2 - 0.8, 4: w / 2 - 0.8, 7: w / 2 - 0.8, 3: -w / 2 + 0.8, 6: -w / 2 + 0.8, 9: -w / 2 + 0.8}.get(ap, 0)
-            hh = h / 2 + 0.8
-            blk.add_lwpolyline([(cx - w / 2, cy - hh), (cx + w / 2, cy - hh), (cx + w / 2, cy + hh), (cx - w / 2, cy + hh)],
+            # box in the text's own frame (font size + attachment point 1..9), then rotated with the text
+            sz = text_size.mtext_size(e)
+            w, h, ap, g = sz.total_width, sz.total_height, e.dxf.attachment_point, 0.8
+            lx0, ly1 = -w * ((ap - 1) % 3) / 2, h * ((ap - 1) // 3) / 2
+            d = e.dxf.get("text_direction")
+            a = math.atan2(d[1], d[0]) if d is not None else math.radians(e.dxf.get("rotation", 0.0))
+            c_, s_ = math.cos(a), math.sin(a)
+            loc = [(lx0 - g, ly1 - h - g), (lx0 + w + g, ly1 - h - g), (lx0 + w + g, ly1 + g), (lx0 - g, ly1 + g)]
+            blk.add_lwpolyline([(e.dxf.insert.x + x * c_ - y * s_, e.dxf.insert.y + x * s_ + y * c_) for x, y in loc],
                                close=True, dxfattribs={"layer": "DIM", "color": 1})
     doc.saveas(OUT / "part.dxf")
     (OUT / "views.json").write_text(json.dumps(views_json, indent=1))

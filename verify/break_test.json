@@ -41,5 +41,32 @@
    "every diameter / radius is a cylinder of the STEP with that axis",
    "drawn views = fresh HLR of the STEP (<= 0.05 mm both ways)"
   ]
+ },
+ {
+  "case": "text_on_line",
+  "expected_fail": "no text touches",
+  "caught": true,
+  "failed_checks": [
+   "no text touches a line, an arrow or another text"
+  ]
+ },
+ {
+  "case": "motor_hits_extrusion",
+  "expected_fail": "fit: no interference",
+  "caught": true,
+  "failed_checks": [
+   "fit: no interference (plate, motor, extrusion, 6 screws; M3 thread engagement excluded)",
+   "fit: motor body clears the extrusion by >= 1 mm"
+  ]
+ },
+ {
+  "case": "thin_floor",
+  "expected_fail": "fit: material under every screw head",
+  "caught": true,
+  "failed_checks": [
+   "fit: no interference (plate, motor, extrusion, 6 screws; M3 thread engagement excluded)",
+   "fit: M5 screw tip stays inside the extrusion slot (6 deep)",
+   "fit: material under every screw head: shear capacity >= 3 x preload and floor >= 0.8 d"
+  ]
  }
 ]

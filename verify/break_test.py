@@ -21,9 +21,9 @@ def dim_by(tmp, feature):
     return doc, doc.entitydb[h]
 
 
-def wrong_text(tmp):            # the 42 step edge printed as 41
-    doc, e = dim_by(tmp, "step edge X")
-    e.dxf.text = "41"
+def wrong_text(tmp):            # the 65 overall length printed as 64
+    doc, e = dim_by(tmp, "overall length X")
+    e.dxf.text = "64"
     doc.saveas(tmp / "part.dxf")
 
 
@@ -49,17 +49,40 @@ def frame_deleted(tmp):         # one GD&T frame gone from the DXF
     doc.saveas(tmp / "part.dxf")
 
 
-def model_changed(tmp):         # pilot bore opened to 23 in the model; the drawing still says 22.5
+def model_changed(tmp):         # pilot bore opened to 23 in the model; the drawing still says 22
     part = import_step(tmp / "part.step")
-    part = part - Pos(21, 25, 5) * Cylinder(11.5, 12)
+    part = part - Pos(22, 25, 5) * Cylinder(11.5, 12)
     export_step(part, tmp / "part.step")
+
+
+def text_on_line(tmp):          # a note moved onto the section view
+    doc = ezdxf.readfile(tmp / "part.dxf")
+    t = next(e for e in doc.modelspace() if e.dxftype() == "TEXT" and e.dxf.text.startswith("7. "))
+    t.set_placement((250.0, 178.0))
+    doc.saveas(tmp / "part.dxf")
+
+
+def motor_hits_extrusion(tmp):  # pilot moved 3 mm towards the extrusion: the motor body now overlaps it
+    f = json.loads((tmp / "features.json").read_text())
+    f["motor"]["x"] += 3
+    (tmp / "features.json").write_text(json.dumps(f))
+
+
+def thin_floor(tmp):            # M5 counterbore 9.4 deep: 0.6 mm left under the head (the REV1 mistake)
+    f = json.loads((tmp / "features.json").read_text())
+    for m in f["m5"]:
+        m["depth"] = 9.4
+    (tmp / "features.json").write_text(json.dumps(f))
 
 
 CASES = [(wrong_text, "dimension text shows the value"),
          (moved_defpoint, "DIMENSION defpoints"),
          (json_point_off_part, "DIMENSION defpoints"),
          (frame_deleted, "GD&T frames are TOLERANCE entities"),
-         (model_changed, "every diameter / radius is a cylinder")]
+         (model_changed, "every diameter / radius is a cylinder"),
+         (text_on_line, "no text touches"),
+         (motor_hits_extrusion, "fit: no interference"),
+         (thin_floor, "fit: material under every screw head")]
 
 
 def main():
@@ -71,10 +94,13 @@ def main():
                 if f.is_file():
                     shutil.copy2(f, tmp / f.name)
             fn(tmp)
-            r = subprocess.run([sys.executable, str(ROOT / "verify" / "verify.py")], capture_output=True, text=True,
-                               env={**os.environ, "MDA_OUT": str(tmp)})
-        fails = [l[5:].split(" {")[0] for l in r.stdout.splitlines() if l.startswith("FAIL ")]
-        caught = r.returncode != 0 and any(f.startswith(expect) for f in fails)
+            fails, rc = [], 0
+            for script, prefix in (("verify.py", ""), ("fit.py", "fit: ")):
+                r = subprocess.run([sys.executable, str(ROOT / "verify" / script)], capture_output=True, text=True,
+                                   env={**os.environ, "MDA_OUT": str(tmp)})
+                rc |= r.returncode
+                fails += [prefix + l[5:].split(" {")[0] for l in r.stdout.splitlines() if l.startswith("FAIL ")]
+        caught = rc != 0 and any(f.startswith(expect) for f in fails)
         ok_all &= caught
         res.append({"case": fn.__name__, "expected_fail": expect, "caught": caught, "failed_checks": fails})
         print(("CAUGHT " if caught else "MISSED ") + fn.__name__, fails)

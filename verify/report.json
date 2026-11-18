@@ -1,12 +1,12 @@
 {
  "part": {
-  "volume": 20484.00862899673,
+  "volume": 26691.97681891576,
   "bbox": [
-   60.0,
+   65.0,
    50.0,
    10.0
   ],
-  "faces": 44
+  "faces": 33
  },
  "views": [
   "FRONT",
@@ -15,7 +15,7 @@
   "SECTION A-A",
   "ISO"
  ],
- "dimensions": 26,
+ "dimensions": 21,
  "tolerance_frames": 7,
  "hlr_worst_mm": {
   "FRONT": [
@@ -36,5 +36,5 @@
   "ezdxf": "1.4.5"
  },
  "checks_failed": [],
- "checks_total": 18
+ "checks_total": 19
 }

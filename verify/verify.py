@@ -186,10 +186,16 @@ def main():
     pos = [g for g in gdt["frames"] if "position" in g["note"]]
     check("position frames refer to A|B|C datums only", all(set(re.findall(r"%%v([A-Z])", g["content"])) <= {"A", "B", "C"} for g in pos))
 
-    # 6. title block
+    # 6. legibility: no text touches a line, an arrow or another text
+    sys.path.insert(0, str(ROOT / "verify"))
+    import overlap
+    clash, ntext = overlap.clashes(msp)
+    check("no text touches a line, an arrow or another text", not clash, texts=ntext, clashes=clash)
+
+    # 7. title block
     texts = " ".join(e.dxf.text for e in msp if e.dxftype() == "TEXT")
     check("title block: author, SCALE 2:1, FIRST ANGLE, material, ISO 2768",
-          all(s in texts for s in ("Ha Phan Thanh Hai", "SCALE 2:1", "FIRST ANGLE", "6061-T6", "ISO 2768")))
+          all(s in texts for s in ("Ha Phan Thanh Hai", "SCALE 2:1", "FIRST ANGLE", "6061-T6", "ISO 2768", "Dimensions in mm", "Sheet 1/1")))
     check("main views drawn at the title-block scale", all(views[n]["scale"] == 2.0 for n in ("FRONT", "TOP", "LEFT", "SECTION A-A")))
     thread = [e for e in msp if e.dxf.layer == "THREAD" and e.dxftype() == "ARC" and abs((e.dxf.end_angle - e.dxf.start_angle) % 360 - 270) < 1e-6]
     check("threads end-on drawn as 3/4 circles on layer THREAD", len(thread) == len(F["m4"]), arcs=len(thread))

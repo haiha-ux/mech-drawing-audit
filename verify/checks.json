@@ -7,8 +7,8 @@
  {
   "name": "every DIMENSION is listed once in dims.json and vice versa",
   "pass": true,
-  "dxf": 26,
-  "json": 26
+  "dxf": 21,
+  "json": 21
  },
  {
   "name": "no exploded dimension text on the DIM layer",
@@ -97,6 +97,12 @@
  {
   "name": "position frames refer to A|B|C datums only",
   "pass": true
+ },
+ {
+  "name": "no text touches a line, an arrow or another text",
+  "pass": true,
+  "texts": 74,
+  "clashes": []
  },
  {
   "name": "title block: author, SCALE 2:1, FIRST ANGLE, material, ISO 2768",
