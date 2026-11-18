@@ -59,3 +59,59 @@ def clashes(msp):
             if a[1] < b[3] - SHRINK and b[1] < a[3] - SHRINK and a[2] < b[4] - SHRINK and b[2] < a[4] - SHRINK:
                 out.append((a[0], "text", b[0]))
     return out, len(texts)
+
+
+def _segs(entities):
+    out = []
+    for p in disassemble.to_primitives(entities):
+        v = [(q.x, q.y) for q in p.vertices()]
+        out += list(zip(v[:-1], v[1:]))
+    return out
+
+
+def _cross(a, b, c, d, end_tol=0.3):
+    """Segments ab and cd cross at a point that is not within end_tol of an end of ab (the leader)."""
+    a, b, c, d = map(np.asarray, (a, b, c, d))
+    r, s = b - a, d - c
+    den = r[0] * s[1] - r[1] * s[0]
+    if abs(den) < 1e-12:
+        return False
+    t = ((c - a)[0] * s[1] - (c - a)[1] * s[0]) / den
+    u = ((c - a)[0] * r[1] - (c - a)[1] * r[0]) / den
+    L = np.linalg.norm(r)
+    return end_tol / L < t < 1 - end_tol / L and 0 <= u <= 1
+
+
+def leader_crossings(msp):
+    """Leaders (diameter / radius callouts, GD&T frame leaders) must not cross a dimension line, a frame, a datum
+    box or a TED box. Extension lines and view geometry may be crossed."""
+    leaders, obstacles = [], []
+    for e in msp:
+        if e.dxftype() == "DIMENSION":
+            ve = list(e.virtual_entities())
+            if e.dimtype in (3, 4):                                     # diameter, radius: its lines are the leader
+                leaders += [(e.dxf.handle, s) for s in _segs([x for x in ve if x.dxftype() == "LINE"])]
+            else:
+                dp = np.array([e.dxf.defpoint.x, e.dxf.defpoint.y])
+                ang = np.radians(e.dxf.get("angle", 0.0))
+                u = np.array([np.cos(ang), np.sin(ang)])
+                for x in ve:
+                    if x.dxftype() == "LINE":   # the dimension line: through defpoint and along the dimension angle
+                        a, b = np.array([x.dxf.start.x, x.dxf.start.y]), np.array([x.dxf.end.x, x.dxf.end.y])
+                        d = b - a
+                        n = np.linalg.norm(d)
+                        if n > 0 and abs(d[0] * (dp - a)[1] - d[1] * (dp - a)[0]) / n < 0.01 and abs(d[0] * u[1] - d[1] * u[0]) / n < 0.01:
+                            obstacles.append((e.dxf.handle, (tuple(a), tuple(b))))
+                    elif x.dxftype() == "LWPOLYLINE":                   # TED box
+                        obstacles += [(e.dxf.handle, s) for s in _segs([x])]
+        elif e.dxftype() == "LINE" and e.dxf.layer == "GDT":
+            leaders.append((e.dxf.handle, ((e.dxf.start.x, e.dxf.start.y), (e.dxf.end.x, e.dxf.end.y))))
+        elif e.dxftype() == "LWPOLYLINE" and e.dxf.layer in ("GDT_PDF", "DATUM"):
+            obstacles += [(e.dxf.handle, s) for s in _segs([e])]
+    out = []
+    for h, (a, b) in leaders:
+        for h2, (c, d) in obstacles:
+            if h2 != h and _cross(a, b, c, d):
+                out.append((h, [round(v, 1) for v in a], [round(v, 1) for v in b], h2))
+                break
+    return out, len(leaders)

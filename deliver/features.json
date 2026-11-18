@@ -17,28 +17,28 @@
    "y": 9.5,
    "hole": 3.4,
    "cbore": 6.5,
-   "depth": 4.0
+   "depth": 3.0
   },
   {
    "x": 6.5,
    "y": 40.5,
    "hole": 3.4,
    "cbore": 6.5,
-   "depth": 4.0
+   "depth": 3.0
   },
   {
    "x": 37.5,
    "y": 9.5,
    "hole": 3.4,
    "cbore": 6.5,
-   "depth": 4.0
+   "depth": 3.0
   },
   {
    "x": 37.5,
    "y": 40.5,
    "hole": 3.4,
    "cbore": 6.5,
-   "depth": 4.0
+   "depth": 3.0
   }
  ],
  "m5": [
@@ -47,14 +47,14 @@
    "y": 15.0,
    "hole": 5.5,
    "cbore": 10.0,
-   "depth": 5.4
+   "depth": 5.2
   },
   {
    "x": 55.0,
    "y": 35.0,
    "hole": 5.5,
    "cbore": 10.0,
-   "depth": 5.4
+   "depth": 5.2
   }
  ],
  "m4": [
@@ -80,10 +80,22 @@
  "motor": {
   "x": 22.0,
   "y": 25.0,
-  "body": 42.3,
+  "body": 42.7,
   "boss_d": 22.0,
+  "boss_tol": [
+   -0.051,
+   0.0
+  ],
   "boss_h": 2.0,
-  "thread_depth": 4.5
+  "thread_depth": 3.8099999999999996
+ },
+ "tol": {
+  "H": 0.1,
+  "cbore_depth": [
+   0.0,
+   0.1
+  ],
+  "screw_length": 0.29
  },
  "extrusion": {
   "x": 55.0,
@@ -95,7 +107,7 @@
    "dk": 5.5,
    "k": 3.0,
    "length": 10.0,
-   "tighten_nm": 1.0
+   "tighten_nm": 0.6
   },
   "M5": {
    "d": 5.0,
@@ -109,7 +121,7 @@
   "A": "z = 0 underside",
   "B": "y = 50 back face",
   "C": "x = 0 left face",
-  "D": "axis of the M5 hole at (55, 15)"
+  "D": "axis of the M5 hole 35 from B (55, 15)"
  },
  "material": "Al 6061-T6",
  "sources": {
@@ -117,6 +129,8 @@
   "DIN 974-1": "counterbore diameters for ISO 4762: M3 6.5, M5 10",
   "ISO 273": "clearance holes, medium series, H13: M3 3.4, M5 5.5",
   "ISO 2306 / ISO 965": "M4x0.7-6H tap drill 3.3",
-  "NEMA ICS 16 / Novanta 17-frame": "31 mm hole spacing, boss 22 0/-0.052 x 2, body 42.3, M3 thread depth 4.5 min"
+  "NEMA ICS 16": "NEMA 17: 31 mm hole square",
+  "Novanta IMS size 17 linear actuator data sheet REV032022": "body 42.7, boss 22.0 +0/-0.051 x 2.0, 4x M3x0.5 thread 0.15 in min deep",
+  "ISO 4759-1": "product grade A screw length tolerance js15"
  }
 }

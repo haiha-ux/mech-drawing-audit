@@ -7,7 +7,7 @@
   "feature": "overall length X",
   "view": "TOP",
   "text": "<>",
-  "handle": "24F",
+  "handle": "253",
   "p1": [
    0.0,
    1.5,
@@ -27,7 +27,7 @@
   "feature": "overall width Y",
   "view": "TOP",
   "text": "<>",
-  "handle": "25E",
+  "handle": "262",
   "p1": [
    1.5,
    0.0,
@@ -47,7 +47,7 @@
   "feature": "bore pos X from datum C",
   "view": "TOP",
   "text": "<>",
-  "handle": "26D",
+  "handle": "271",
   "p1": [
    0.0,
    48.5,
@@ -67,7 +67,7 @@
   "feature": "bore pos Y from datum B",
   "view": "TOP",
   "text": "<>",
-  "handle": "27D",
+  "handle": "281",
   "p1": [
    63.5,
    50.0,
@@ -87,7 +87,7 @@
   "feature": "bore (NEMA pilot) dia",
   "view": "TOP",
   "text": "<> H8",
-  "handle": "28D",
+  "handle": "291",
   "at": [
    22.0,
    25.0,
@@ -107,7 +107,7 @@
   "feature": "M3 holes pos X from datum C",
   "view": "TOP",
   "text": "<>",
-  "handle": "298",
+  "handle": "29C",
   "p1": [
    0.0,
    1.5,
@@ -127,7 +127,7 @@
   "feature": "M3 pattern spacing X",
   "view": "TOP",
   "text": "<>",
-  "handle": "2A6",
+  "handle": "2AA",
   "p1": [
    6.5,
    9.5,
@@ -147,7 +147,7 @@
   "feature": "M3 holes pos Y from datum B",
   "view": "TOP",
   "text": "<>",
-  "handle": "2B6",
+  "handle": "2BA",
   "p1": [
    63.5,
    50.0,
@@ -167,7 +167,7 @@
   "feature": "M3 pattern spacing Y",
   "view": "TOP",
   "text": "<>",
-  "handle": "2C5",
+  "handle": "2C9",
   "p1": [
    6.5,
    40.5,
@@ -183,13 +183,13 @@
   "id": "D10",
   "type": "diameter",
   "value": 3.4,
-  "tol": "ISO2768-m",
-  "feature": "M3 holes dia (4x), counterbore 6.5 x 4",
+  "tol": "H13",
+  "feature": "M3 holes dia (4x), counterbore 6.5 x 3",
   "view": "TOP",
-  "text": "4\u00d7 <> THRU\\P\u2334 \u00d86.5 \u21a7 4",
-  "handle": "2D5",
+  "text": "4\u00d7 <> H13 THRU\\P\u2334 \u00d86.5 \u21a7 3 +0.1/0",
+  "handle": "2D9",
   "at": [
-   6.5,
+   37.5,
    9.5,
    10.0
   ],
@@ -207,7 +207,7 @@
   "feature": "M5 holes pos X from datum C",
   "view": "TOP",
   "text": "<>",
-  "handle": "2E0",
+  "handle": "2E4",
   "p1": [
    0.0,
    1.5,
@@ -227,7 +227,7 @@
   "feature": "M5 holes pos Y from datum B",
   "view": "TOP",
   "text": "<>",
-  "handle": "2F0",
+  "handle": "2F4",
   "p1": [
    63.5,
    50.0,
@@ -247,7 +247,7 @@
   "feature": "M5 holes spacing Y",
   "view": "TOP",
   "text": "<>",
-  "handle": "300",
+  "handle": "304",
   "p1": [
    55.0,
    35.0,
@@ -263,11 +263,11 @@
   "id": "D14",
   "type": "diameter",
   "value": 5.5,
-  "tol": "ISO2768-m",
-  "feature": "M5 holes dia (2x), counterbore 10 x 5.4",
+  "tol": "H13",
+  "feature": "M5 holes dia (2x), counterbore 10 x 5.2",
   "view": "TOP",
-  "text": "2\u00d7 <> THRU\\P\u2334 \u00d810 \u21a7 5.4",
-  "handle": "310",
+  "text": "2\u00d7 <> H13 THRU\\P\u2334 \u00d810 \u21a7 5.2 +0.1/0",
+  "handle": "314",
   "at": [
    55.0,
    15.0,
@@ -287,7 +287,7 @@
   "feature": "corner chamfer leg (4x, 45 deg)",
   "view": "TOP",
   "text": "4\u00d7 <>\u00d745\u00b0",
-  "handle": "31B",
+  "handle": "31F",
   "p1": [
    64.0,
    50.0,
@@ -303,11 +303,11 @@
   "id": "D16",
   "type": "linear",
   "value": 10.0,
-  "tol": "ISO2768-m",
+  "tol": "\u00b10.1",
   "feature": "overall height Z",
   "view": "FRONT",
-  "text": "<>",
-  "handle": "32C",
+  "text": "<> \u00b10.1",
+  "handle": "330",
   "p1": [
    65.0,
    1.5,
@@ -327,7 +327,7 @@
   "feature": "M4 holes pos X from datum C",
   "view": "FRONT",
   "text": "<>",
-  "handle": "33B",
+  "handle": "33F",
   "p1": [
    0.0,
    1.5,
@@ -347,7 +347,7 @@
   "feature": "M4 holes spacing X",
   "view": "FRONT",
   "text": "<>",
-  "handle": "34B",
+  "handle": "34F",
   "p1": [
    13.0,
    0.0,
@@ -367,7 +367,7 @@
   "feature": "M4 holes pos Z from datum A",
   "view": "FRONT",
   "text": "<>",
-  "handle": "35B",
+  "handle": "35F",
   "p1": [
    0.0,
    1.5,
@@ -387,7 +387,7 @@
   "feature": "M4 thread major dia (2x); tap drill 3.3 x 10 in the STEP",
   "view": "FRONT",
   "text": "2\u00d7 M4\u00d70.7-6H \u21a7 8\\Ptap drill \u00d83.3 \u21a7 10",
-  "handle": "36B",
+  "handle": "36F",
   "at": [
    29.0,
    0.0,
@@ -407,7 +407,7 @@
   "feature": "M5 hole D dia (auxiliary, carries datum D)",
   "view": "SECTION A-A",
   "text": "(\u00d8<>)",
-  "handle": "376",
+  "handle": "37A",
   "p1": [
    55.0,
    12.25,

@@ -177,7 +177,9 @@ def main():
             dist = math.hypot(max(x0 - tm.x, 0, tm.x - x1), max(y0 - tm.y, 0, tm.y - y1))   # callout to the frame box
             lim = 12
         else:
-            dist, lim = math.dist(g["insert"], g["feature_pt"]), 25
+            x0, y0, x1, y1 = g["bbox"]
+            fx, fy = g["feature_pt"]
+            dist, lim = math.hypot(max(x0 - fx, 0, fx - x1), max(y0 - fy, 0, fy - y1)), 25
         if dist > lim:
             far.append((g["note"], round(dist, 1)))
     check("GD&T frames are TOLERANCE entities", len(tols) == len(gdt["frames"]) and len(tols) >= 6, tolerance_entities=len(tols))
@@ -191,6 +193,8 @@ def main():
     import overlap
     clash, ntext = overlap.clashes(msp)
     check("no text touches a line, an arrow or another text", not clash, texts=ntext, clashes=clash)
+    cross, nlead = overlap.leader_crossings(msp)
+    check("no leader crosses a dimension line, a GD&T frame, a datum box or a TED box", not cross, leaders=nlead, crossings=cross)
 
     # 7. title block
     texts = " ".join(e.dxf.text for e in msp if e.dxftype() == "TEXT")

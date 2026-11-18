@@ -20,11 +20,11 @@ S = 2.0                      # drawing scale 2:1
 SHEET = (420.0, 297.0)
 SECTION_X = 55.0             # section A-A through the M5 holes
 # sheet positions of callouts, frames and notes (tuned so that no text touches a line: verify checks it)
-PILOT_LOC, PILOT_FRAME = (56.0, 202.0), (21.0, 194.5)
-M3_LOC, M4_LOC, M5_LOC = (92.0, 32.0), (150.0, 278.0), (234.0, 80.0)
-COAX_FRAME = (288.0, 195.0)
+PILOT_LOC = (125.0, 200.0)
+M3_LOC, M4_LOC, M5_LOC = (215.0, 78.0), (215.0, 268.0), (245.0, 98.0)
+COAX_FRAME = (288.0, 194.0)
 NOTES_AT = (232.0, 231.0)
-LABEL_DY = {"TOP": 13, "FRONT": 4, "SECTION A-A": 4}
+LABEL_DY = {"TOP": 13, "FRONT": 13, "SECTION A-A": 4}
 
 # view definitions: camera direction (from part towards camera), up, right; sheet origin of the model origin
 VIEWS = {
@@ -105,7 +105,8 @@ class Sheet:
         self.n = 0
 
     def poly(self, pts, layer):
-        self.msp.add_lwpolyline([tuple(p) for p in pts], dxfattribs={"layer": layer})
+        pl = self.msp.add_lwpolyline([tuple(p) for p in pts], dxfattribs={"layer": layer})
+        pl.dxf.flags |= 128                     # PLINEGEN: the dash pattern runs along the whole polyline
 
     def line(self, a, b, layer):
         self.msp.add_line(tuple(a), tuple(b), dxfattribs={"layer": layer})
@@ -139,7 +140,23 @@ class Sheet:
         d = self.msp.add_diameter_dim(center=(cx, cy), radius=r_model * s, angle=ang_deg, dimstyle="ISO25", text=text,
                                       location=loc, override={"dimtoh": 1, "dimtih": 1, "dimtad": 0},
                                       dxfattribs={"layer": "DIM"})
-        return self._record(d, "diameter", value, tol, feature, view, text, {"at": centre, "axis": axis})
+        did = self._record(d, "diameter", value, tol, feature, view, text, {"at": centre, "axis": axis})
+        self._snap_text(self.dims[-1]["handle"])
+        return did
+
+    def _snap_text(self, handle):
+        """ezdxf sizes multi-line callout text from the raw string (about twice too wide) and leaves a gap between the
+        leader shoulder and the text: move the text to 1 mm past the shoulder, using the real font width."""
+        dim = self.doc.entitydb[handle]
+        blk = self.doc.blocks.get(dim.dxf.geometry)
+        mt = next(e for e in blk if e.dxftype() == "MTEXT")
+        sh_ = [e for e in blk if e.dxftype() == "LINE" and abs(e.dxf.start.y - e.dxf.end.y) < 1e-9][-1]
+        x0, x1 = sorted((sh_.dxf.start.x, sh_.dxf.end.x))
+        w = text_size.mtext_size(mt).total_width
+        assert mt.dxf.attachment_point == 5
+        nx = x1 + 1.0 + w / 2 if mt.dxf.insert.x > x1 else x0 - 1.0 - w / 2
+        mt.dxf.insert = (nx, mt.dxf.insert.y, 0)
+        dim.dxf.text_midpoint = (nx, mt.dxf.insert.y, 0)
 
     def rad(self, view, centre, r_model, ang_deg, value, feature, text="<>", tol="ISO2768-m", axis=(0, 0, 1), loc=None):
         cx, cy = project(view, centre)
@@ -155,8 +172,23 @@ class Sheet:
         self.line((cx - e, cy), (cx + e, cy), "CENTER")
         self.line((cx, cy - e), (cx, cy + e), "CENTER")
 
+    def under_callout(self, feature, tol, datums):
+        """Frame insert next to the text of size callout `feature`, left-aligned: under it, or above it when the leader comes from below."""
+        rec = next(d for d in self.dims if d["feature"].startswith(feature))
+        dim = self.doc.entitydb[rec["handle"]]
+        mt = next(e for e in self.doc.blocks.get(dim.dxf.geometry) if e.dxftype() == "MTEXT")
+        sz = text_size.mtext_size(mt)
+        tm = dim.dxf.text_midpoint
+        lead_y = [y for e in self.doc.blocks.get(dim.dxf.geometry) if e.dxftype() == "LINE" for y in (e.dxf.start.y, e.dxf.end.y)]
+        if min(lead_y) < tm.y - sz.total_height / 2:          # leader comes up from below: the frame goes above the text
+            return (tm.x - sz.total_width / 2, tm.y + sz.total_height / 2 + 4.5)
+        return (tm.x - sz.total_width / 2, tm.y - sz.total_height / 2 - 4.5)     # left edge under the text
+
     def gdt(self, at, sym, tol, datums, feature_pt, note="", attached_to=None):
-        """ISO 1101 frame: TOLERANCE entity + plot-only graphic copy. sym: GDT font letter."""
+        """ISO 1101 frame: TOLERANCE entity + plot-only graphic copy. sym: GDT font letter.
+        With attached_to and at=None, the frame goes directly under that size callout's text."""
+        if at is None:
+            at = self.under_callout(attached_to, tol, datums)
         content = "{\\Fgdt;%s}%%%%v%s%%%%v%s" % (sym, tol.replace("Ø", "{\\Fgdt;n}"), "%%v".join(datums))
         content = content.replace("%%%%v", "%%v")
         tol_ent = self.msp.new_entity("TOLERANCE", dxfattribs={"layer": "GDT", "dimstyle": "ISO25", "insert": (at[0], at[1], 0),
@@ -172,7 +204,11 @@ class Sheet:
                 (x + w / 2, at[1]), align=ezdxf.enums.TextEntityAlignment.MIDDLE_CENTER)
             x += w
         if attached_to is None:                                                # leader with an arrowhead on the feature
-            start = (x, at[1]) if feature_pt[0] > x else (at[0], at[1])
+            if at[0] <= feature_pt[0] <= x:
+                mid = (at[0] + x) / 2
+                start = (mid, at[1] + h / 2) if feature_pt[1] > at[1] else (mid, at[1] - h / 2)
+            else:
+                start = (x, at[1]) if feature_pt[0] > x else (at[0], at[1])
             self.msp.add_line(start, tuple(feature_pt), dxfattribs={"layer": "GDT"})
             self.arrow(feature_pt, start, "GDT")
         self.gdts.append({"insert": list(at), "content": content, "feature_pt": list(feature_pt), "note": note,
@@ -317,7 +353,7 @@ def main():
     sh.lin(T, (1.5, 0, H), (1.5, W, H), (t00[0] - 30, 0), W, "overall width Y", angle=90)
     sh.lin(T, (0, W - 1.5, H), (P5["x"], P5["y"], H), (0, t0W[1] + 10), P5["x"], "bore pos X from datum C", ted=True)
     sh.lin(T, (L - 1.5, W, H), (P5["x"], P5["y"], H), (tLW[0] + 10, 0), W - P5["y"], "bore pos Y from datum B", angle=90, ted=True)
-    sh.dia(T, (P5["x"], P5["y"], H), P5["d"] / 2, 135, P5["d"], "bore (NEMA pilot) dia", "<> " + P5["fit"], tol=P5["fit"],
+    sh.dia(T, (P5["x"], P5["y"], H), P5["d"] / 2, 80, P5["d"], "bore (NEMA pilot) dia", "<> " + P5["fit"], tol=P5["fit"],
            loc=PILOT_LOC)
     m3a, m3c = M3[1], M3[0]                      # (6.5, 40.5), (6.5, 9.5)
     sh.lin(T, (0, 1.5, H), (m3c["x"], m3c["y"], H), (0, t00[1] - 10), m3c["x"], "M3 holes pos X from datum C", ted=True)
@@ -325,20 +361,21 @@ def main():
     sh.lin(T, (L - 1.5, W, H), (m3a["x"], m3a["y"], H), (tLW[0] + 18, 0), W - m3a["y"], "M3 holes pos Y from datum B", angle=90, ted=True,
            loc=(tLW[0] + 18 - 2.6, (tLW[1] + project(T, (0, m3a["y"], H))[1]) / 2))
     sh.lin(T, (m3a["x"], m3a["y"], H), (m3c["x"], m3c["y"], H), (t00[0] - 10, 0), m3a["y"] - m3c["y"], "M3 pattern spacing Y", angle=90, ted=True)
-    sh.dia(T, (m3c["x"], m3c["y"], H), m3c["hole"] / 2, 225, m3c["hole"], f"M3 holes dia (4x), counterbore {m3c['cbore']:g} x {m3c['depth']:g}",
-           f"4× <> THRU\\P⌴ Ø{m3c['cbore']:g} ↧ {m3c['depth']:g}", loc=M3_LOC)
+    m3d = M3[2]                                  # (37.5, 9.5): its leader runs right, clear of the dimension rows
+    sh.dia(T, (m3d["x"], m3d["y"], H), m3d["hole"] / 2, 345, m3d["hole"], f"M3 holes dia (4x), counterbore {m3d['cbore']:g} x {m3d['depth']:g}",
+           f"4× <> H13 THRU\\P⌴ Ø{m3d['cbore']:g} ↧ {m3d['depth']:g} +0.1/0", tol="H13", loc=M3_LOC)
     m5a, m5b = M5[1], M5[0]                      # (55, 35), (55, 15)
     sh.lin(T, (0, 1.5, H), (m5b["x"], m5b["y"], H), (0, t00[1] - 22), m5b["x"], "M5 holes pos X from datum C", ted=True)
     sh.lin(T, (L - 1.5, W, H), (m5a["x"], m5a["y"], H), (tLW[0] + 26, 0), W - m5a["y"], "M5 holes pos Y from datum B", angle=90, ted=True)
     sh.lin(T, (m5a["x"], m5a["y"], H), (m5b["x"], m5b["y"], H), (tLW[0] + 34, 0), m5a["y"] - m5b["y"], "M5 holes spacing Y", angle=90, ted=True)
-    sh.dia(T, (m5b["x"], m5b["y"], H), m5b["hole"] / 2, 315, m5b["hole"], f"M5 holes dia (2x), counterbore {m5b['cbore']:g} x {m5b['depth']:g}",
-           f"2× <> THRU\\P⌴ Ø{m5b['cbore']:g} ↧ {m5b['depth']:g}", loc=M5_LOC)
+    sh.dia(T, (m5b["x"], m5b["y"], H), m5b["hole"] / 2, 355, m5b["hole"], f"M5 holes dia (2x), counterbore {m5b['cbore']:g} x {m5b['depth']:g}",
+           f"2× <> H13 THRU\\P⌴ Ø{m5b['cbore']:g} ↧ {m5b['depth']:g} +0.1/0", tol="H13", loc=M5_LOC)
     ch = F["chamfer"]
     sh.lin(T, (L - ch, W, H), (L, W - ch, H), (0, tLW[1] + 6), ch, "corner chamfer leg (4x, 45 deg)", text="4× <>×45°")
     # FRONT view
     Fv = "FRONT"
     f00, fL0 = project(Fv, (0, 0, 0)), project(Fv, (L, 0, 0))
-    sh.lin(Fv, (L, 1.5, 0), (L, 1.5, H), (fL0[0] + 10, 0), H, "overall height Z", angle=90)
+    sh.lin(Fv, (L, 1.5, 0), (L, 1.5, H), (fL0[0] + 10, 0), H, "overall height Z", angle=90, text="<> ±0.1", tol="±0.1")
     m4a, m4b = M4
     sh.lin(Fv, (0, 1.5, H), (m4a["x"], 0, m4a["z"]), (0, project(Fv, (0, 0, H))[1] + 8), m4a["x"], "M4 holes pos X from datum C", ted=True)
     sh.lin(Fv, (m4a["x"], 0, m4a["z"]), (m4b["x"], 0, m4b["z"]), (0, project(Fv, (0, 0, H))[1] + 8), m4b["x"] - m4a["x"], "M4 holes spacing X", ted=True)
@@ -356,23 +393,25 @@ def main():
     sh.line((xl, dD), (xl - 14.0, dD), "DIM")                     # dimension line carried out under its text
 
     # ---------------- datums, GD&T, roughness
-    sh.datum("A", project(Fv, (6, 0, 0)), (0, -1))
-    sh.datum("B", project(T, (30, W, H)), (0, 1))
+    sh.datum("A", project(Fv, (11, 0, 0)), (0, -1))
+    sh.datum("B", project(T, (25, W, H)), (0, 1))
     sh.datum("C", project(T, (0, 45, H)), (-1, 0))
     sh.datum("D", (project(Sv, (XS, m5b["y"] + m5b["hole"] / 2, 0))[0], dD), (1, 0))
     fl = project(Fv, (32, 0, 0))
     sh.gdt((fl[0] + 6, fl[1] - 14), "c", "0.05", [], fl, "flatness of A")
-    bpt = project(T, (44, W, H))
-    sh.gdt((bpt[0] + 6, bpt[1] + 22), "b", "0.05", ["A"], bpt, "perpendicularity of B to A")
+    bpt = project(T, (58, W, H))
+    sh.gdt((bpt[0] + 8, bpt[1] + 22), "b", "0.05", ["A"], bpt, "perpendicularity of B to A")
+    cpt = project(T, (0, 47, H))
+    sh.gdt((22.0, cpt[1] + 12), "b", "0.05", ["A", "B"], cpt, "perpendicularity of C to A and B")
     m3pt = project(T, (m3a["x"], m3a["y"], H))
-    sh.gdt((M3_LOC[0], M3_LOC[1] - 9.5), "j", "Ø0.1", ["A", "B", "C"], m3pt, "position of 4x M3 holes", attached_to="M3 holes dia")
+    sh.gdt(None, "j", "Ø0.1", ["A", "B", "C"], m3pt, "position of 4x M3 holes", attached_to="M3 holes dia")
     p5pt = project(T, (P5["x"], P5["y"] + P5["d"] / 2, H))
-    sh.gdt(PILOT_FRAME, "j", "Ø0.05", ["A", "B", "C"], p5pt, "position of the pilot bore", attached_to="bore (NEMA pilot) dia")
+    sh.gdt(None, "j", "Ø0.05", ["A", "B", "C"], p5pt, "position of the pilot bore", attached_to="bore (NEMA pilot) dia")
     m5pt = project(T, (m5b["x"], m5b["y"], H))
-    sh.gdt((M5_LOC[0], M5_LOC[1] - 9.5), "j", "Ø0.2", ["A", "B", "C"], m5pt, "position of 2x M5 holes", attached_to="M5 holes dia")
+    sh.gdt(None, "j", "Ø0.2", ["A", "B", "C"], m5pt, "position of 2x M5 holes", attached_to="M5 holes dia")
     m4pt = project(Fv, (m4a["x"], 0, m4a["z"]))
-    sh.gdt((M4_LOC[0], M4_LOC[1] - 9.5), "j", "Ø0.2", ["A", "C"], m4pt, "position of 2x M4 threads", attached_to="M4 thread major dia")
-    cbp = project(Sv, (XS, m5b["y"] + m5b["cbore"] / 2, H - 0.5))
+    sh.gdt(None, "j", "Ø0.2", ["A", "C"], m4pt, "position of 2x M4 threads", attached_to="M4 thread major dia")
+    cbp = project(Sv, (XS, m5b["y"] + m5b["cbore"] / 2, H - 2.0))     # on the counterbore wall
     sh.gdt(COAX_FRAME, "r", "Ø0.1", ["D"], cbp, "coaxiality of M5 counterbore to hole D")
     sh.roughness(project(Fv, (50, 0, 0)), "Ra 1.6")
 
@@ -387,9 +426,9 @@ def main():
     mass = part.volume * 2.7e-3
     rows = [("NEMA 17 MOTOR PLATE FOR 2020 EXTRUSION", 44, 4.0),
             (f"Material: {F['material']}   Mass ≈ {mass:.0f} g   Dimensions in mm", 34.5, 2.4),
-            ("Finish: clear anodise MIL-A-8625 Type II Cl 1, 10-15 µm; mask Ø22 bore, M4 threads", 30.0, 2.4),
+            ("Finish: clear anodise MIL-A-8625 Type II Cl 1, 10-15 µm (see note 8)", 30.0, 2.4),
             ("General tol. ISO 2768-mK   Ra 3.2 unless stated (ISO 21920-1)   Edges 0.2 max", 25.5, 2.4),
-            (f"Drawn: Ha Phan Thanh Hai   {datetime.date.today().isoformat()}   SCALE 2:1   A3   Sheet 1/1   DWG MDA-001 rev B", 14.5, 2.4)]
+            (f"Drawn: Ha Phan Thanh Hai   {datetime.date.today().isoformat()}   SCALE 2:1   A3   Sheet 1/1   DWG MDA-001 rev C", 14.5, 2.4)]
     for s, y, hgt in rows:
         sh.text(s, (x0 + 3, y), hgt, style="ISO")
     # first angle symbol (ISO 5456-2): cone front view, then the view from its left placed on the right
@@ -399,15 +438,16 @@ def main():
     msp.add_circle((sx0 + 16, sy0), 1.5, dxfattribs={"layer": "FRAME"})
     sh.text("FIRST ANGLE", (sx0 - 22, sy0 - 1), 2.2, style="ISO")
     notes = ["NOTES",
-             "1. Datums: A underside, B back face, C left face, D axis of the M5 hole at Y15.",
+             "1. Datums: A underside, B back face, C left face, D axis of the M5 hole 35 from B.",
              "2. Boxed dimensions are theoretically exact (ISO 5458); tolerance in the frames.",
-             "3. Counterbore diameters to DIN 974-1 for ISO 4762 screws M3×10 and M5×10.",
+             "3. Counterbores: DIN 974-1, for ISO 4762 M3×10 (0.6 Nm: motor thread 3.8 deep) and M5×10.",
              "4. Ø3.4 and Ø5.5 clearance holes H13 (ISO 273 medium), not general tolerance.",
              "5. M4×0.7-6H ↧8, tap drill Ø3.3 ↧10 (ISO 2306): accessory mounting.",
-             "6. Ø22 H8 bore locates the NEMA 17 boss (Ø22 0/-0.052 × 2); bore is through.",
-             "7. Datum A finish milled for flatness 0.05. Remove all burrs."]
+             "6. Ø22 H8 bore locates the NEMA 17 boss (Ø22 +0/-0.051 × 2); bore is through.",
+             "7. Datum A finish milled for flatness 0.05. Remove all burrs.",
+             "8. Dimensions apply after anodising. Mask the Ø22 bore and the M4 threads."]
     for k, s in enumerate(notes):
-        sh.text(s, NOTES_AT[0:1] + (NOTES_AT[1] - 4.2 * k,), 2.4 if k else 2.8)
+        sh.text(s, NOTES_AT[0:1] + (NOTES_AT[1] - 4.0 * k,), 2.4 if k else 2.8)
     doc = sh.doc
     for rec in sh.dims:
         if rec["tol"] != "basic":

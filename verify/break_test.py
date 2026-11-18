@@ -75,12 +75,25 @@ def thin_floor(tmp):            # M5 counterbore 9.4 deep: 0.6 mm left under the
     (tmp / "features.json").write_text(json.dumps(f))
 
 
+def frame_on_leader(tmp):       # the M5 position frame drawn across its own callout leader
+    g = next(f for f in json.loads((tmp / "gdt.json").read_text())["frames"] if f["note"] == "position of 2x M5 holes")
+    x0, y0, x1, y1 = g["bbox"]
+    doc = ezdxf.readfile(tmp / "part.dxf")
+    for e in doc.modelspace():
+        if e.dxftype() == "LWPOLYLINE" and e.dxf.layer == "GDT_PDF":
+            pts = [(p[0], p[1]) for p in e.get_points()]
+            if all(x0 - 0.01 <= x <= x1 + 0.01 and y0 - 0.01 <= y <= y1 + 0.01 for x, y in pts):
+                e.set_points([(x - 30, y + 12) for x, y in pts])
+    doc.saveas(tmp / "part.dxf")
+
+
 CASES = [(wrong_text, "dimension text shows the value"),
          (moved_defpoint, "DIMENSION defpoints"),
          (json_point_off_part, "DIMENSION defpoints"),
          (frame_deleted, "GD&T frames are TOLERANCE entities"),
          (model_changed, "every diameter / radius is a cylinder"),
          (text_on_line, "no text touches"),
+         (frame_on_leader, "no leader crosses"),
          (motor_hits_extrusion, "fit: no interference"),
          (thin_floor, "fit: material under every screw head")]
 

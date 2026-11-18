@@ -11,7 +11,7 @@
     236.0
    ],
    "note": "flatness of A",
-   "handle": "396",
+   "handle": "39A",
    "attached_to": null,
    "bbox": [
     130.0,
@@ -22,28 +22,48 @@
   },
   {
    "insert": [
-    154.0,
+    184.0,
     198.0
    ],
    "content": "{\\Fgdt;b}%%v0.05%%vA",
    "feature_pt": [
-    148.0,
+    176.0,
     176.0
    ],
    "note": "perpendicularity of B to A",
-   "handle": "39D",
+   "handle": "3A1",
    "attached_to": null,
    "bbox": [
-    154.0,
+    184.0,
     195.0,
-    179.8,
+    209.8,
     201.0
    ]
   },
   {
    "insert": [
-    92.0,
-    22.5
+    22.0,
+    182.0
+   ],
+   "content": "{\\Fgdt;b}%%v0.05%%vA%%vB",
+   "feature_pt": [
+    60.0,
+    170.0
+   ],
+   "note": "perpendicularity of C to A and B",
+   "handle": "3AA",
+   "attached_to": null,
+   "bbox": [
+    22.0,
+    179.0,
+    53.8,
+    185.0
+   ]
+  },
+  {
+   "insert": [
+    219.0,
+    69.4995
    ],
    "content": "{\\Fgdt;j}%%v{\\Fgdt;n}0.1%%vA%%vB%%vC",
    "feature_pt": [
@@ -51,19 +71,19 @@
     157.0
    ],
    "note": "position of 4x M3 holes",
-   "handle": "3A6",
+   "handle": "3B5",
    "attached_to": "M3 holes dia",
    "bbox": [
-    92.0,
-    19.5,
-    129.8,
-    25.5
+    219.0,
+    66.4995,
+    256.8,
+    72.4995
    ]
   },
   {
    "insert": [
-    21.0,
-    194.5
+    129.0,
+    206.0
    ],
    "content": "{\\Fgdt;j}%%v{\\Fgdt;n}0.05%%vA%%vB%%vC",
    "feature_pt": [
@@ -71,19 +91,19 @@
     148.0
    ],
    "note": "position of the pilot bore",
-   "handle": "3B1",
+   "handle": "3C0",
    "attached_to": "bore (NEMA pilot) dia",
    "bbox": [
-    21.0,
-    191.5,
-    61.0,
-    197.5
+    129.0,
+    203.0,
+    169.0,
+    209.0
    ]
   },
   {
    "insert": [
-    234.0,
-    70.5
+    249.0,
+    89.4995
    ],
    "content": "{\\Fgdt;j}%%v{\\Fgdt;n}0.2%%vA%%vB%%vC",
    "feature_pt": [
@@ -91,19 +111,19 @@
     106.0
    ],
    "note": "position of 2x M5 holes",
-   "handle": "3BC",
+   "handle": "3CB",
    "attached_to": "M5 holes dia",
    "bbox": [
-    234.0,
-    67.5,
-    271.8,
-    73.5
+    249.0,
+    86.4995,
+    286.8,
+    92.4995
    ]
   },
   {
    "insert": [
-    150.0,
-    268.5
+    219.0,
+    276.5005
    ],
    "content": "{\\Fgdt;j}%%v{\\Fgdt;n}0.2%%vA%%vC",
    "feature_pt": [
@@ -111,33 +131,33 @@
     246.0
    ],
    "note": "position of 2x M4 threads",
-   "handle": "3C7",
+   "handle": "3D6",
    "attached_to": "M4 thread major dia",
    "bbox": [
-    150.0,
-    265.5,
-    181.8,
-    271.5
+    219.0,
+    273.5005,
+    250.8,
+    279.5005
    ]
   },
   {
    "insert": [
     288.0,
-    195.0
+    194.0
    ],
    "content": "{\\Fgdt;r}%%v{\\Fgdt;n}0.1%%vD",
    "feature_pt": [
     285.0,
-    187.0
+    184.0
    ],
    "note": "coaxiality of M5 counterbore to hole D",
-   "handle": "3D0",
+   "handle": "3DF",
    "attached_to": null,
    "bbox": [
     288.0,
-    192.0,
+    191.0,
     313.8,
-    198.0
+    197.0
    ]
   }
  ],
@@ -145,14 +165,14 @@
   {
    "letter": "A",
    "foot": [
-    72.0,
+    82.0,
     236.0
    ]
   },
   {
    "letter": "B",
    "foot": [
-    120.0,
+    110.0,
     176.0
    ]
   },

@@ -1,8 +1,10 @@
 """Assembly fit: plate + NEMA 17 motor + 2020 extrusion + screws, built from features.json, and checked.
 python verify/fit.py -> out/assembly.step, verify/fit.json (exit 1 on any failure)
 
-The motor and the extrusion are envelopes, not vendor models: motor body 42.3 square x 40, boss at the middle of
-its tolerance, M3 tapped 4.5 deep; extrusion 20 x 20 with a 6.2 x 6 slot on top (the T-nut is not modelled).
+The motor and the extrusion are envelopes, not vendor models: motor body 42.7 square x 40, boss at the middle of
+its tolerance, M3 tapped to the data-sheet minimum depth; extrusion 20 x 20 with a 6.2 x 6 slot on top (the T-nut and
+the slot lip are not modelled). The interference checks use nominal sizes. The screw checks also take the worst case
+of the tolerances in features.json["tol"]: plate thickness, counterbore depth, screw length.
 """
 import json
 import math
@@ -43,7 +45,7 @@ def main():
     motor = Pos(mo["x"], mo["y"], -40) * Box(b, b, 40, align=(Align.CENTER, Align.CENTER, Align.MIN))
     for m in F["m3"]:
         motor -= zc(2.5, mo["thread_depth"], m["x"], m["y"], -mo["thread_depth"])
-    motor += zc(mo["boss_d"] - 0.026, mo["boss_h"], mo["x"], mo["y"], 0)
+    motor += zc(mo["boss_d"] + sum(mo["boss_tol"]) / 2, mo["boss_h"], mo["x"], mo["y"], 0)
     motor += zc(5.0, 24, mo["x"], mo["y"], 0)
     # extrusion envelope along y under the M5 holes
     e = ex["size"]
@@ -73,25 +75,34 @@ def main():
     xs = (mo["x"] - b / 2, mo["x"] + b / 2)
     check("motor body lies inside the plate in x and y", xs[0] >= 0 and mo["y"] - b / 2 >= 0 and mo["y"] + b / 2 <= F["overall"]["W"],
           motor_x=[round(v, 2) for v in xs])
-    # 2. M3 engagement into the motor: enough thread, and the screw must not bottom
-    for kind, m, sc in screws:
-        if kind != "M3":
-            continue
-        eng = S["M3"]["length"] - (H - m["depth"])
-        ok = S["M3"]["d"] <= eng < mo["thread_depth"]
-        if not ok:
-            break
-    check("M3 screws engage the motor 1 d .. motor thread depth", ok, engagement=eng, thread_depth=mo["thread_depth"])
-    m5 = F["m5"][0]
-    tip = (H - m5["depth"]) - S["M5"]["length"]
-    check("M5 screw tip stays inside the extrusion slot (6 deep)", -6.0 < tip < 0, tip_z=tip)
+    # 2. screw stack, nominal and worst case: floor = H - counterbore depth; protrusion below A = length - floor
+    tol = F["tol"]
+    lo, hi = tol["cbore_depth"]
+    floors = {k: (H - tol["H"] - (holes[0]["depth"] + hi), H - holes[0]["depth"], H + tol["H"] - (holes[0]["depth"] + lo))
+              for k, holes in (("M3", F["m3"]), ("M5", F["m5"]))}             # (min, nominal, max)
+    stack = {}
+    for k in ("M3", "M5"):
+        L_, tl = S[k]["length"], tol["screw_length"]
+        fmin, fnom, fmax = floors[k]
+        stack[k] = {"floor": [round(fmin, 2), round(fnom, 2), round(fmax, 2)],
+                    "protrusion": [round(L_ - tl - fmax, 2), round(L_ - fnom, 2), round(L_ + tl - fmin, 2)]}
+    p3 = stack["M3"]["protrusion"]
+    check("M3 engagement into the motor, worst case, stays below the 0.15 in (3.81) minimum thread depth",
+          p3[2] < mo["thread_depth"], engagement_min_nom_max=p3, thread_depth=round(mo["thread_depth"], 2),
+          engagement_nominal_vs_d=round(p3[1] / S["M3"]["d"], 2))
+    proud = {k: round(F[k.lower()][0]["depth"] + lo - S[k]["k"], 2) for k in ("M3", "M5")}
+    check("screw heads never stand proud of the top face (counterbore depth min >= head height k max)",
+          all(v >= 0 for v in proud.values()), recess=proud)
+    p5 = stack["M5"]["protrusion"]
+    check("M5 screw tip, worst case, stays inside the extrusion slot (6 deep, assumed)", p5[2] < 6.0,
+          protrusion_min_nom_max=p5)
     # 3. material under each screw head: punch-through shear vs the tightening preload
     under = []
     for kind, holes in (("M3", F["m3"]), ("M5", F["m5"])):
-        s, floor = S[kind], H - holes[0]["depth"]
+        s, floor = S[kind], floors[kind][0]                         # thinnest floor
         preload = s["tighten_nm"] * 1000 / (K_NUT * s["d"])          # N
         shear = math.pi * s["dk"] * floor * TAU_6061                  # N
-        under.append({"screw": kind, "floor_mm": floor, "preload_N": round(preload), "shear_capacity_N": round(shear),
+        under.append({"screw": kind, "floor_min_mm": round(floor, 2), "preload_N": round(preload), "shear_capacity_N": round(shear),
                       "ratio": round(shear / preload, 2), "floor_vs_d": round(floor / s["d"], 2)})
     check("material under every screw head: shear capacity >= 3 x preload and floor >= 0.8 d",
           all(u["ratio"] >= 3 and u["floor_vs_d"] >= 0.8 for u in under), under=under)

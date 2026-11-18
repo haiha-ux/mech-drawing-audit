@@ -41,7 +41,7 @@ def main():
     for c in import_step(OUT / "assembly.step").children:
         f = OUT / f"asm_{c.label}.stl"
         export_stl(c, f, tolerance=0.05, angular_tolerance=0.3)
-        asm.append((f, COL.get(c.label, (0.35, 0.35, 0.38))))
+        asm.append((f, COL.get(c.label, (0.90, 0.55, 0.15) if c.label[:1] == "M" else (0.35, 0.35, 0.38))))   # screws orange
     shot(asm, "3_assembly.png", (170, -170, 90), focal=(32, 25, -15))
 
 

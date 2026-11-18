@@ -1,6 +1,6 @@
 {
  "part": {
-  "volume": 26691.97681891576,
+  "volume": 26810.304906213227,
   "bbox": [
    65.0,
    50.0,
@@ -16,7 +16,7 @@
   "ISO"
  ],
  "dimensions": 21,
- "tolerance_frames": 7,
+ "tolerance_frames": 8,
  "hlr_worst_mm": {
   "FRONT": [
    0.0102,
@@ -36,5 +36,5 @@
   "ezdxf": "1.4.5"
  },
  "checks_failed": [],
- "checks_total": 19
+ "checks_total": 20
 }

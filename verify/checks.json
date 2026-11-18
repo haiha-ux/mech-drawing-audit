@@ -71,7 +71,7 @@
  {
   "name": "GD&T frames are TOLERANCE entities",
   "pass": true,
-  "tolerance_entities": 7
+  "tolerance_entities": 8
  },
  {
   "name": "every datum used in a frame has a datum symbol (A, B, C, D)",
@@ -101,8 +101,14 @@
  {
   "name": "no text touches a line, an arrow or another text",
   "pass": true,
-  "texts": 74,
+  "texts": 79,
   "clashes": []
+ },
+ {
+  "name": "no leader crosses a dimension line, a GD&T frame, a datum box or a TED box",
+  "pass": true,
+  "leaders": 12,
+  "crossings": []
  },
  {
   "name": "title block: author, SCALE 2:1, FIRST ANGLE, material, ISO 2768",

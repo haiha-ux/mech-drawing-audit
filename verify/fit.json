@@ -7,26 +7,43 @@
  {
   "name": "motor body clears the extrusion by >= 1 mm",
   "pass": true,
-  "gap": 1.85
+  "gap": 1.65
  },
  {
   "name": "motor body lies inside the plate in x and y",
   "pass": true,
   "motor_x": [
-   0.85,
-   43.15
+   0.65,
+   43.35
   ]
  },
  {
-  "name": "M3 screws engage the motor 1 d .. motor thread depth",
+  "name": "M3 engagement into the motor, worst case, stays below the 0.15 in (3.81) minimum thread depth",
   "pass": true,
-  "engagement": 4.0,
-  "thread_depth": 4.5
+  "engagement_min_nom_max": [
+   2.61,
+   3.0,
+   3.49
+  ],
+  "thread_depth": 3.81,
+  "engagement_nominal_vs_d": 1.0
  },
  {
-  "name": "M5 screw tip stays inside the extrusion slot (6 deep)",
+  "name": "screw heads never stand proud of the top face (counterbore depth min >= head height k max)",
   "pass": true,
-  "tip_z": -5.4
+  "recess": {
+   "M3": 0.0,
+   "M5": 0.2
+  }
+ },
+ {
+  "name": "M5 screw tip, worst case, stays inside the extrusion slot (6 deep, assumed)",
+  "pass": true,
+  "protrusion_min_nom_max": [
+   4.81,
+   5.2,
+   5.69
+  ]
  },
  {
   "name": "material under every screw head: shear capacity >= 3 x preload and floor >= 0.8 d",
@@ -34,15 +51,15 @@
   "under": [
    {
     "screw": "M3",
-    "floor_mm": 6.0,
-    "preload_N": 1667,
-    "shear_capacity_N": 21460,
-    "ratio": 12.88,
-    "floor_vs_d": 2.0
+    "floor_min_mm": 6.8,
+    "preload_N": 1000,
+    "shear_capacity_N": 24322,
+    "ratio": 24.32,
+    "floor_vs_d": 2.27
    },
    {
     "screw": "M5",
-    "floor_mm": 4.6,
+    "floor_min_mm": 4.6,
     "preload_N": 4000,
     "shear_capacity_N": 25427,
     "ratio": 6.36,
