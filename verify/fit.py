@@ -1,7 +1,7 @@
 """Assembly fit: plate + NEMA 17 motor + 2020 extrusion + screws, built from features.json, and checked.
 python verify/fit.py -> out/assembly.step, verify/fit.json (exit 1 on any failure)
 
-The motor and the extrusion are envelopes, not vendor models: motor body 42.7 square x 40, boss at the middle of
+The motor and the extrusion are envelopes, not vendor models: motor 42.7 square flange (1.7 in) x 34.0 long, boss at the middle of
 its tolerance, M3 tapped to the data-sheet minimum depth; extrusion 20 x 20 with a 6.2 x 6 slot on top (the T-nut and
 the slot lip are not modelled). The interference checks use nominal sizes. The screw checks also take the worst case
 of the tolerances in features.json["tol"]: plate thickness, counterbore depth, screw length.
@@ -42,7 +42,7 @@ def main():
     mo, ex, S = F["motor"], F["extrusion"], F["screws"]
     # motor: body below the plate, boss and shaft up into the pilot bore, M3 tapped holes
     b = mo["body"]
-    motor = Pos(mo["x"], mo["y"], -40) * Box(b, b, 40, align=(Align.CENTER, Align.CENTER, Align.MIN))
+    motor = Pos(mo["x"], mo["y"], -34) * Box(b, b, 34, align=(Align.CENTER, Align.CENTER, Align.MIN))   # 1.7 in flange, 34.0 long
     for m in F["m3"]:
         motor -= zc(2.5, mo["thread_depth"], m["x"], m["y"], -mo["thread_depth"])
     motor += zc(mo["boss_d"] + sum(mo["boss_tol"]) / 2, mo["boss_h"], mo["x"], mo["y"], 0)

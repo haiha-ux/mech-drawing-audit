@@ -24,7 +24,8 @@ PILOT_LOC = (125.0, 200.0)
 M3_LOC, M4_LOC, M5_LOC = (215.0, 78.0), (215.0, 268.0), (245.0, 98.0)
 COAX_FRAME = (288.0, 194.0)
 NOTES_AT = (232.0, 231.0)
-LABEL_DY = {"TOP": 13, "FRONT": 13, "SECTION A-A": 4}
+LABEL_DY = {"TOP": 20, "FRONT": 13, "SECTION A-A": 4}
+LABEL_LEFT = {"TOP"}            # labels set at the left of the view (the right side carries frames)
 
 # view definitions: camera direction (from part towards camera), up, right; sheet origin of the model origin
 VIEWS = {
@@ -151,6 +152,10 @@ class Sheet:
         blk = self.doc.blocks.get(dim.dxf.geometry)
         mt = next(e for e in blk if e.dxftype() == "MTEXT")
         sh_ = [e for e in blk if e.dxftype() == "LINE" and abs(e.dxf.start.y - e.dxf.end.y) < 1e-9][-1]
+        ar = next(e for e in blk if e.dxftype() == "INSERT")              # arrowhead, its tip on the circle
+        for ln in blk:
+            if ln.dxftype() == "LINE" and ln is not sh_ and math.dist((ln.dxf.start.x, ln.dxf.start.y), (ar.dxf.insert.x, ar.dxf.insert.y)) < 4:
+                ln.dxf.start = ar.dxf.insert
         x0, x1 = sorted((sh_.dxf.start.x, sh_.dxf.end.x))
         w = text_size.mtext_size(mt).total_width
         assert mt.dxf.attachment_point == 5
@@ -305,8 +310,9 @@ def main():
         vj["up"] = [float(x) for x in vj["up"]]
         vj["right"] = [float(x) for x in vj["right"]]
         lab = vj["name"] + ("" if vj["name"] != "ISO" else " (1:1)")
-        sh.text(lab, (vj["bbox"][2], vj["bbox"][3] + LABEL_DY.get(vj["name"], 4)), 3.5, style="ISO",
-                align=ezdxf.enums.TextEntityAlignment.BOTTOM_RIGHT)
+        left = vj["name"] in LABEL_LEFT
+        sh.text(lab, (vj["bbox"][0 if left else 2], vj["bbox"][3] + LABEL_DY.get(vj["name"], 4)), 3.5, style="ISO",
+                align=ezdxf.enums.TextEntityAlignment.BOTTOM_LEFT if left else ezdxf.enums.TextEntityAlignment.BOTTOM_RIGHT)
 
     O, P5, M3, M5, M4 = F["overall"], F["pilot"], F["m3"], F["m5"], F["m4"]
     L, W, H = O["L"], O["W"], O["H"]
@@ -371,7 +377,8 @@ def main():
     sh.dia(T, (m5b["x"], m5b["y"], H), m5b["hole"] / 2, 355, m5b["hole"], f"M5 holes dia (2x), counterbore {m5b['cbore']:g} x {m5b['depth']:g}",
            f"2× <> H13 THRU\\P⌴ Ø{m5b['cbore']:g} ↧ {m5b['depth']:g} +0.1/0", tol="H13", loc=M5_LOC)
     ch = F["chamfer"]
-    sh.lin(T, (L - ch, W, H), (L, W - ch, H), (0, tLW[1] + 6), ch, "corner chamfer leg (4x, 45 deg)", text="4× <>×45°")
+    sh.lin(T, (L - ch, W, H), (L, W - ch, H), (0, tLW[1] + 6), ch, "corner chamfer leg (4x, 45 deg)", text="4× <>×45°",
+           loc=(tLW[0] + 17, tLW[1] + 8))                       # text past the corner, clear of the B frame leader
     # FRONT view
     Fv = "FRONT"
     f00, fL0 = project(Fv, (0, 0, 0)), project(Fv, (L, 0, 0))
@@ -393,8 +400,8 @@ def main():
     sh.line((xl, dD), (xl - 14.0, dD), "DIM")                     # dimension line carried out under its text
 
     # ---------------- datums, GD&T, roughness
-    sh.datum("A", project(Fv, (11, 0, 0)), (0, -1))
-    sh.datum("B", project(T, (25, W, H)), (0, 1))
+    sh.datum("A", project(Fv, (9, 0, 0)), (0, -1))          # clear of the M3 axis (6.5) and the "13" extension line
+    sh.datum("B", project(T, (36, W, H)), (0, 1))           # clear of the "22" dimension and the pilot leader
     sh.datum("C", project(T, (0, 45, H)), (-1, 0))
     sh.datum("D", (project(Sv, (XS, m5b["y"] + m5b["hole"] / 2, 0))[0], dD), (1, 0))
     fl = project(Fv, (32, 0, 0))
@@ -428,7 +435,7 @@ def main():
             (f"Material: {F['material']}   Mass ≈ {mass:.0f} g   Dimensions in mm", 34.5, 2.4),
             ("Finish: clear anodise MIL-A-8625 Type II Cl 1, 10-15 µm (see note 8)", 30.0, 2.4),
             ("General tol. ISO 2768-mK   Ra 3.2 unless stated (ISO 21920-1)   Edges 0.2 max", 25.5, 2.4),
-            (f"Drawn: Ha Phan Thanh Hai   {datetime.date.today().isoformat()}   SCALE 2:1   A3   Sheet 1/1   DWG MDA-001 rev C", 14.5, 2.4)]
+            (f"Drawn: Ha Phan Thanh Hai   {datetime.date.today().isoformat()}   SCALE 2:1   A3   Sheet 1/1   DWG MDA-001 rev D", 14.5, 2.4)]
     for s, y, hgt in rows:
         sh.text(s, (x0 + 3, y), hgt, style="ISO")
     # first angle symbol (ISO 5456-2): cone front view, then the view from its left placed on the right

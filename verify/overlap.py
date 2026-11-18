@@ -15,7 +15,7 @@ def items(msp):
     texts, pts = [], []
     for e in disassemble.recursive_decompose(msp):
         t = e.dxftype()
-        if e.dxf.layer in ("GDT", "HATCH", "FRAME") and t != "TEXT" or t == "TOLERANCE":
+        if e.dxf.layer in ("HATCH", "FRAME") and t != "TEXT" or t == "TOLERANCE":
             continue                       # TOLERANCE is drawn by its GDT_PDF copy; section hatch and sheet frame skipped
         if not e.dxf.layer == "GDT_PDF" and msp.doc.layers.get(e.dxf.layer).is_off():
             continue

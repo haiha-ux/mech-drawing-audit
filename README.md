@@ -13,7 +13,7 @@ NEMA 17 stepper motor beside a 2020 aluminium extrusion.
 | Part | 65 × 50 × 10 mm, Al 6061-T6, clear anodised. 1 × 45° chamfer on the 4 vertical corners |
 | How it mounts | The motor face and the top of the extrusion both bear on the underside (datum A). The motor hangs below the left part of the plate with its shaft up through the pilot bore. The extrusion runs along y under the right part. All screws go in from the top, into counterbores. Nothing locates the plate on the extrusion in x or y: align the x = 65 edge with the side of the extrusion, and the screws hold it by friction |
 | Features | Ø22 H8 pilot bore, which locates on the motor's Ø22 boss; 4 × M3 counterbored on the 31 mm NEMA 17 square, for ISO 4762 M3×10 tightened to 0.6 Nm; 2 × M5 counterbored on the extrusion's slot line, 20 apart, for ISO 4762 M5×10 into T-nuts; 2 × M4×0.7-6H tapped 8 deep in the front face, for accessories such as a limit-switch bracket |
-| Drawing | A3, scale 2:1, first-angle projection, rev C. Front, top and left views, section A-A through the M5 holes, and an iso view at 1:1. 21 real DIMENSION entities, 8 GD&T frames, datums A–D, title block, ISO 2768-mK. The plate thickness (10 ±0.1) and the counterbore depths (+0.1/0) are toleranced, because the screw stack depends on them |
+| Drawing | A3, scale 2:1, first-angle projection, rev D. Front, top and left views, section A-A through the M5 holes, and an iso view at 1:1. 21 real DIMENSION entities, 8 GD&T frames, datums A–D, title block, ISO 2768-mK. The plate thickness (10 ±0.1) and the counterbore depths (+0.1/0) are toleranced, because the screw stack depends on them |
 
 ## Folders
 
@@ -81,8 +81,8 @@ PyMuPDF. If PyMuPDF is in a different Python, set `PDF_PYTHON` to that interpret
 8. Every hole has a size, a location given as theoretically exact dimensions, and a position frame.
 9. The GD&T frames are TOLERANCE entities, and every datum letter they use has a datum symbol. Each frame sits near
    its feature, or directly under the size callout it controls.
-10. No text touches a line, an arrow or another text. Text boxes come from the font metrics; the other entities,
-    dimension blocks included, are sampled every 0.15 mm.
+10. No text touches a line, an arrow or another text, view labels and frame leaders included. Text boxes come from
+    the font metrics; the other entities, dimension blocks included, are sampled every 0.15 mm.
 11. No leader crosses a dimension line, a GD&T frame, a datum box or a TED box. Leaders may cross extension lines
     and view geometry.
 12. The title block has the author, scale, projection, material, general tolerance, "Dimensions in mm" and the sheet
@@ -92,7 +92,7 @@ PyMuPDF. If PyMuPDF is in a different Python, set `PDF_PYTHON` to that interpret
 
 - **Interference:** none between the plate, the motor, the extrusion and the six screws, apart from each M3 screw in
   its own motor thread.
-- **Clearances:** the 42.7 mm motor body clears the extrusion by 1.65 mm, which must be at least 1, and lies inside
+- **Clearances:** the 42.7 mm motor flange clears the extrusion by 1.65 mm, which must be at least 1, and lies inside
   the plate.
 - **Screw stack, worst case:** floor = plate thickness (10 ±0.1) − counterbore depth (+0.1/0), and screw length
   ±0.29 (ISO 4759-1 grade A, js15).
@@ -126,7 +126,7 @@ Two of these cases found gaps in the checks before they were added:
 
 ## Design values and sources
 
-- **NEMA 17 motor:** 31 mm square pattern (NEMA ICS 16). Pilot Ø22.0 +0/−0.051 × 2.0, body 42.7, and M3 thread
+- **NEMA 17 motor:** 31 mm square pattern (NEMA ICS 16). Pilot Ø22.0 +0/−0.051 × 2.0, square flange 42.7 (1.7 in), length 34.0, and M3 thread
   depth 0.15 in (3.8 mm) minimum, per the Novanta IMS size 17 linear actuator data sheet, REV032022. That is a
   linear actuator on the same NEMA 17 frame. Other makers give up to 4.5 mm of thread, so check the motor you buy.
   The H8 bore gives 0 to 0.084 clearance on the boss, so the bore locates the motor.
@@ -144,9 +144,9 @@ Two of these cases found gaps in the checks before they were added:
 - The interference checks use nominal dimensions. Only the screw stack is checked at the tolerance limits.
 - The motor and the extrusion in `assembly.step` are envelopes, not vendor models. The extrusion is a 20 × 20 bar
   with a 6.2 × 6 slot on top. The T-nut and the slot lip thickness are not modelled, so the M5 thread engagement
-  in the T-nut is not checked. With a lip of about 1.8 mm, the nominal M5×10 would engage about 3.4 mm of the nut,
-  about 0.7 d. Check the T-nut and the slot of the extrusion you buy; an M5×12 adds 2 mm and may reach the slot
-  floor.
+  in the T-nut is not checked. With a lip of about 1.8 mm, the M5×10 engages about 3.4 mm of the nut nominally
+  (0.7 d) and 3.0 mm in the worst case (0.6 d), under the 1.5–2 d usually wanted. Check the T-nut and the slot of
+  the extrusion you buy. An M5×12 does not fit a 6 mm slot: it would stand 6.81 / 7.2 / 7.69 mm below the plate.
 - The screw checks cover the preload only, not operating loads.
 - The STEP models the M4 holes at tap-drill size. The thread exists only on the drawing (callout and ¾ circles),
   which is the usual practice.

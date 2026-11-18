@@ -17,7 +17,7 @@ OUT = ROOT / "out"
 L, W, H = 65.0, 50.0, 10.0          # overall
 CH = 1.0                             # 4 vertical corner edges, 1 x 45 deg
 
-# NEMA 17: 31 mm M3 square (NEMA ICS 16). Body 42.7, pilot boss Ø22.0 +0/-0.051 x 2.0, M3x0.5 thread 0.15 in (3.81 mm)
+# NEMA 17: 31 mm M3 square (NEMA ICS 16). Square flange 42.7 (1.7 in), length 34.0, pilot boss Ø22.0 +0/-0.051 x 2.0, M3x0.5 thread 0.15 in (3.81 mm)
 # minimum deep: Novanta IMS size 17 linear actuator data sheet, REV032022 (same NEMA 17 frame as their rotary motors).
 # Other makers give up to 4.5 mm thread; the 3.81 minimum is the one designed to.
 MOTOR = (22.0, 25.0)                 # body spans x 0.65..43.35, inside the plate
