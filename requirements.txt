@@ -1,0 +1,5 @@
+build123d==0.13.*
+ezdxf>=1.4
+vtk
+numpy
+PyMuPDF

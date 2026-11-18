@@ -1,0 +1,45 @@
+[
+ {
+  "case": "wrong_text",
+  "expected_fail": "dimension text shows the value",
+  "caught": true,
+  "failed_checks": [
+   "dimension text shows the value (thread callouts show the thread)"
+  ]
+ },
+ {
+  "case": "moved_defpoint",
+  "expected_fail": "DIMENSION defpoints",
+  "caught": true,
+  "failed_checks": [
+   "DIMENSION geometry x DIMLFAC = dims.json value (+-0.005)",
+   "DIMENSION defpoints = dims.json 3D points through views.json (+-0.02 sheet mm)"
+  ]
+ },
+ {
+  "case": "json_point_off_part",
+  "expected_fail": "DIMENSION defpoints",
+  "caught": true,
+  "failed_checks": [
+   "DIMENSION defpoints = dims.json 3D points through views.json (+-0.02 sheet mm)",
+   "every linear dimension point lies on the STEP (surface or hole axis, 0.01)"
+  ]
+ },
+ {
+  "case": "frame_deleted",
+  "expected_fail": "GD&T frames are TOLERANCE entities",
+  "caught": true,
+  "failed_checks": [
+   "GD&T frames are TOLERANCE entities"
+  ]
+ },
+ {
+  "case": "model_changed",
+  "expected_fail": "every diameter / radius is a cylinder",
+  "caught": true,
+  "failed_checks": [
+   "every diameter / radius is a cylinder of the STEP with that axis",
+   "drawn views = fresh HLR of the STEP (<= 0.05 mm both ways)"
+  ]
+ }
+]

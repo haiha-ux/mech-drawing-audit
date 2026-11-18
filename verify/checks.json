@@ -1,0 +1,114 @@
+[
+ {
+  "name": "part.step: one valid solid",
+  "pass": true,
+  "solids": 1
+ },
+ {
+  "name": "every DIMENSION is listed once in dims.json and vice versa",
+  "pass": true,
+  "dxf": 26,
+  "json": 26
+ },
+ {
+  "name": "no exploded dimension text on the DIM layer",
+  "pass": true,
+  "count": 0
+ },
+ {
+  "name": "DIMENSION geometry x DIMLFAC = dims.json value (+-0.005)",
+  "pass": true,
+  "bad": []
+ },
+ {
+  "name": "dimension text shows the value (thread callouts show the thread)",
+  "pass": true,
+  "bad": []
+ },
+ {
+  "name": "DIMENSION defpoints = dims.json 3D points through views.json (+-0.02 sheet mm)",
+  "pass": true,
+  "bad": []
+ },
+ {
+  "name": "every linear dimension point lies on the STEP (surface or hole axis, 0.01)",
+  "pass": true,
+  "bad": []
+ },
+ {
+  "name": "every diameter / radius is a cylinder of the STEP with that axis",
+  "pass": true,
+  "bad": []
+ },
+ {
+  "name": "overall X / Y / Z dimensioned",
+  "pass": true,
+  "overall length X": 1,
+  "overall width Y": 1,
+  "overall height Z": 1
+ },
+ {
+  "name": "drawn views = fresh HLR of the STEP (<= 0.05 mm both ways)",
+  "pass": true,
+  "FRONT": [
+   0.0102,
+   0.0204
+  ],
+  "TOP": [
+   0.0102,
+   0.0282
+  ],
+  "LEFT": [
+   0.0102,
+   0.0204
+  ]
+ },
+ {
+  "name": "every hole feature has a size and a location (TED + position frame)",
+  "pass": true,
+  "missing": []
+ },
+ {
+  "name": "GD&T frames are TOLERANCE entities",
+  "pass": true,
+  "tolerance_entities": 7
+ },
+ {
+  "name": "every datum used in a frame has a datum symbol (A, B, C, D)",
+  "pass": true,
+  "used": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "drawn": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ]
+ },
+ {
+  "name": "every frame within 25 mm of its feature, or directly under the size callout it controls",
+  "pass": true,
+  "far": []
+ },
+ {
+  "name": "position frames refer to A|B|C datums only",
+  "pass": true
+ },
+ {
+  "name": "title block: author, SCALE 2:1, FIRST ANGLE, material, ISO 2768",
+  "pass": true
+ },
+ {
+  "name": "main views drawn at the title-block scale",
+  "pass": true
+ },
+ {
+  "name": "threads end-on drawn as 3/4 circles on layer THREAD",
+  "pass": true,
+  "arcs": 2
+ }
+]

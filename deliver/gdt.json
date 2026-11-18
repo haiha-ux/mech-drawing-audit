@@ -1,0 +1,174 @@
+{
+ "frames": [
+  {
+   "insert": [
+    114.0,
+    224.0
+   ],
+   "content": "{\\Fgdt;c}%%v0.02%%v",
+   "feature_pt": [
+    120.0,
+    236.0
+   ],
+   "note": "flatness of A",
+   "handle": "44C",
+   "attached_to": null,
+   "bbox": [
+    114.0,
+    221.0,
+    133.8,
+    227.0
+   ]
+  },
+  {
+   "insert": [
+    170.0,
+    198.0
+   ],
+   "content": "{\\Fgdt;b}%%v0.05%%vA",
+   "feature_pt": [
+    164.0,
+    176.0
+   ],
+   "note": "perpendicularity of B to A",
+   "handle": "452",
+   "attached_to": null,
+   "bbox": [
+    170.0,
+    195.0,
+    195.8,
+    201.0
+   ]
+  },
+  {
+   "insert": [
+    92.0,
+    22.5
+   ],
+   "content": "{\\Fgdt;j}%%v{\\Fgdt;n}0.1%%vA%%vB%%vC",
+   "feature_pt": [
+    75.59615,
+    161.59615
+   ],
+   "note": "position of 4x M3 holes",
+   "handle": "45A",
+   "attached_to": "M3 holes dia",
+   "bbox": [
+    92.0,
+    19.5,
+    129.8,
+    25.5
+   ]
+  },
+  {
+   "insert": [
+    21.0,
+    194.5
+   ],
+   "content": "{\\Fgdt;j}%%v{\\Fgdt;n}0.05%%vA%%vB%%vC",
+   "feature_pt": [
+    102.0,
+    148.5
+   ],
+   "note": "position of the pilot bore",
+   "handle": "465",
+   "attached_to": "bore (NEMA pilot) dia",
+   "bbox": [
+    21.0,
+    191.5,
+    61.0,
+    197.5
+   ]
+  },
+  {
+   "insert": [
+    234.0,
+    70.5
+   ],
+   "content": "{\\Fgdt;j}%%v{\\Fgdt;n}0.2%%vA%%vB%%vC",
+   "feature_pt": [
+    172.0,
+    106.0
+   ],
+   "note": "position of 2x M5 holes",
+   "handle": "470",
+   "attached_to": "M5 holes dia",
+   "bbox": [
+    234.0,
+    67.5,
+    271.8,
+    73.5
+   ]
+  },
+  {
+   "insert": [
+    150.0,
+    268.5
+   ],
+   "content": "{\\Fgdt;j}%%v{\\Fgdt;n}0.2%%vA%%vC%%vB",
+   "feature_pt": [
+    86.0,
+    250.0
+   ],
+   "note": "position of 2x M4 threads",
+   "handle": "47B",
+   "attached_to": "M4 thread major dia",
+   "bbox": [
+    150.0,
+    265.5,
+    187.8,
+    271.5
+   ]
+  },
+  {
+   "insert": [
+    299.0,
+    160.6
+   ],
+   "content": "{\\Fgdt;r}%%v{\\Fgdt;n}0.1%%vD",
+   "feature_pt": [
+    285.0,
+    174.6
+   ],
+   "note": "coaxiality of M5 counterbore to hole D",
+   "handle": "486",
+   "attached_to": null,
+   "bbox": [
+    299.0,
+    157.6,
+    324.8,
+    163.6
+   ]
+  }
+ ],
+ "datums": [
+  {
+   "letter": "A",
+   "foot": [
+    72.0,
+    236.0
+   ]
+  },
+  {
+   "letter": "B",
+   "foot": [
+    120.0,
+    176.0
+   ]
+  },
+  {
+   "letter": "C",
+   "foot": [
+    60.0,
+    120.0
+   ]
+  },
+  {
+   "letter": "D",
+   "foot": [
+    269.5,
+    168.0
+   ]
+  }
+ ]
+}

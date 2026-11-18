@@ -1,0 +1,104 @@
+{
+ "overall": {
+  "L": 60.0,
+  "W": 50.0,
+  "H": 10.0
+ },
+ "step": {
+  "x": 42.0,
+  "h": 6.0
+ },
+ "chamfer": 1.0,
+ "pilot": {
+  "x": 21.0,
+  "y": 25.0,
+  "d": 22.5
+ },
+ "m3": [
+  {
+   "x": 5.5,
+   "y": 9.5,
+   "hole": 3.4,
+   "cbore": 6.5,
+   "depth": 3.4
+  },
+  {
+   "x": 5.5,
+   "y": 40.5,
+   "hole": 3.4,
+   "cbore": 6.5,
+   "depth": 3.4
+  },
+  {
+   "x": 36.5,
+   "y": 9.5,
+   "hole": 3.4,
+   "cbore": 6.5,
+   "depth": 3.4
+  },
+  {
+   "x": 36.5,
+   "y": 40.5,
+   "hole": 3.4,
+   "cbore": 6.5,
+   "depth": 3.4
+  }
+ ],
+ "m5": [
+  {
+   "x": 51.0,
+   "y": 15.0,
+   "hole": 5.5,
+   "cbore": 10.0,
+   "depth": 5.4
+  },
+  {
+   "x": 51.0,
+   "y": 35.0,
+   "hole": 5.5,
+   "cbore": 10.0,
+   "depth": 5.4
+  }
+ ],
+ "m4": [
+  {
+   "x": 13.0,
+   "z": 5.0,
+   "tap": 3.3,
+   "major": 4.0,
+   "thread_depth": 8.0,
+   "drill_depth": 10.0,
+   "pitch": 0.7
+  },
+  {
+   "x": 29.0,
+   "z": 5.0,
+   "tap": 3.3,
+   "major": 4.0,
+   "thread_depth": 8.0,
+   "drill_depth": 10.0,
+   "pitch": 0.7
+  }
+ ],
+ "pocket": {
+  "cx": 51.0,
+  "cy": 25.0,
+  "lx": 12.0,
+  "ly": 8.0,
+  "depth": 2.0,
+  "r": 2.0
+ },
+ "datums": {
+  "A": "z = 0 underside",
+  "B": "y = 50 back face",
+  "C": "x = 0 left face",
+  "D": "axis of M5 hole at (51, 15)"
+ },
+ "material": "Al 6061-T6",
+ "sources": {
+  "ISO 4762": "M3 dk max 5.5, k max 3.0; M5 dk max 8.5, k max 5.0 (counterbore = dk + 1, depth = k + 0.4)",
+  "ISO 273": "clearance holes, medium series: M3 3.4, M5 5.5",
+  "ISO 2306 / ISO 965": "M4x0.7-6H tap drill 3.3",
+  "NEMA ICS 16": "NEMA 17 frame: 31 mm hole spacing, 22 mm pilot"
+ }
+}
